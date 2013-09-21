@@ -126,10 +126,12 @@ unsigned char* UINT16_TO_STREAM_f (unsigned char *p, unsigned short u16)
 //
 //*****************************************************************************
 
-unsigned short STREAM_TO_UINT16_f(char* p, unsigned short offset)
+unsigned short STREAM_TO_UINT16_f(char* ip, unsigned short offset)
 {
+        unsigned char *p = (unsigned char *)ip;
+
         return (unsigned short)((unsigned short)((unsigned short)
-								(*(p + offset + 1)) << 8) + (unsigned short)(*(p + offset)));
+              (*(p + offset + 1)) << 8) + (unsigned short)(*(p + offset)));
 }
 
 //*****************************************************************************
@@ -146,8 +148,10 @@ unsigned short STREAM_TO_UINT16_f(char* p, unsigned short offset)
 //
 //*****************************************************************************
 
-unsigned long STREAM_TO_UINT32_f(char* p, unsigned short offset)
+unsigned long STREAM_TO_UINT32_f(char* ip, unsigned short offset)
 {
+        unsigned char *p = (unsigned char *)ip;
+
         return (unsigned long)((unsigned long)((unsigned long)
 							 (*(p + offset + 3)) << 24) + (unsigned long)((unsigned long)
 							 (*(p + offset + 2)) << 16) + (unsigned long)((unsigned long)

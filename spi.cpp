@@ -564,9 +564,6 @@ int SpiInit(void)
 
 //  SpiConfigStoreMy(); // prime ccspi_my* values for ASSERT
 
-  // Newly-initialized SPI is in the same state that ASSERT_CS will set it
-  // to.  Invoke DEASSERT (which also restores SPI registers) so the next
-  // ASSERT call won't clobber the ccspi_old* values -- we need those!
   negate_cs();
 
   return(0);
