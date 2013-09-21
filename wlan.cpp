@@ -120,8 +120,10 @@ static void SimpleLink_Init_Start(unsigned short usPatchesAvailableAtHost)
 	
 	ptr = tSLInformation.pucTxCommandBuffer;
 	args = (unsigned char *)(ptr + HEADERS_SIZE_CMD);
+	if (usPatchesAvailableAtHost > 2)
+	  usPatchesAvailableAtHost = 2;
 	
-	UINT8_TO_STREAM(args, ((usPatchesAvailableAtHost) ? SL_PATCHES_REQUEST_FORCE_HOST : SL_PATCHES_REQUEST_DEFAULT));
+	UINT8_TO_STREAM(args, usPatchesAvailableAtHost);
 	
 	// IRQ Line asserted - send HCI_CMND_SIMPLE_LINK_START to CC3000
 	hci_command_send(HCI_CMND_SIMPLE_LINK_START, ptr, WLAN_SL_INIT_START_PARAMS_LEN);
@@ -427,7 +429,7 @@ wlan_connect(unsigned long ulSecType, char *ssid, long ssid_len,
 }
 #else
 long
-wlan_connect(char *ssid, long ssid_len)
+wlan_connect(const char *ssid, long ssid_len)
 {
 	long ret;
 	unsigned char *ptr;

@@ -34,6 +34,7 @@
 *****************************************************************************/
 #include <string.h>
 
+#include "settings.hpp"
 #include "core.hpp"
 #include "netapp.hpp"
 #include "hci.hpp"
@@ -177,7 +178,7 @@ long netapp_dhcp(unsigned long *aucIP, unsigned long *aucSubnetMask,unsigned lon
 //*****************************************************************************
 
 #ifndef CC3000_TINY_DRIVER
-long 
+long
 netapp_timeout_values(unsigned long *aucDHCP, unsigned long *aucARP,unsigned long *aucKeepalive,	unsigned long *aucInactivity)
 {
 	signed char scRet;

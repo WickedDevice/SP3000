@@ -51,8 +51,7 @@ short SPIInterruptsEnabled = 0;
 #define 	eSPI_STATE_READ_FIRST_PORTION	 (7)
 #define 	eSPI_STATE_READ_EOT				 (8)
 
-typedef struct
-{
+typedef struct {
     gcSpiHandleRx SPIRxHandler;
 
     unsigned short usTxPacketLength;
@@ -60,7 +59,6 @@ typedef struct
     unsigned long ulSpiState;
     unsigned char *pTxPacket;
     unsigned char *pRxPacket;
-
 } tSpiInformation;
 
 tSpiInformation sSpiInformation;
@@ -78,40 +76,41 @@ unsigned char tSpiReadHeader[] = { READ, 0, 0, 0, 0 };
 
 char spi_buffer[CC3000_RX_BUFFER_SIZE];
 unsigned char wlan_tx_buffer[CC3000_TX_BUFFER_SIZE];
-#define SPIPump(data)   SPI.transfer(data)
 
 //*****************************************************************************
 //
-//! This function enter point for write flow
+//!
 //!
 //!  \param  SpiPauseSpi
 //!
 //!  \return none
 //!
-//!  \brief  The function triggers a user provided callback for 
+//!  \brief:
 //
 //*****************************************************************************
 
 void SpiPauseSpi(void)
 {
-  SPIInterruptsEnabled = 0;
+  wlan_int_status = INT_DISABLED;
+  detachInterrupt(WLAN_IRQ_INTNUM);
 }
 
 //*****************************************************************************
 //
-//! This function enter point for write flow
+//!
 //!
 //!  \param  SpiResumeSpi
 //!
 //!  \return none
 //!
-//!  \brief  The function triggers a user provided callback for 
+//!  \brief:
 //
 //*****************************************************************************
 
 void SpiResumeSpi(void)
 {
-  SPIInterruptsEnabled = 1;
+  wlan_int_status = INT_ENABLED;
+  attachInterrupt(WLAN_IRQ_INTNUM, CC3000InterruptHandler, FALLING);
 }
 
 //*****************************************************************************
@@ -163,7 +162,7 @@ void SpiReadDataSynchronous(unsigned char *data, unsigned short size)
   unsigned char *data_to_send = tSpiReadHeader;
 
   for (i = 0; i < size; i++) {
-    data[i] = SPIPump(data_to_send[0]);
+    data[i] = SPI.transfer(0x03);
   }
 }
 
@@ -181,7 +180,7 @@ void SpiReadDataSynchronous(unsigned char *data, unsigned short size)
 void SpiWriteDataSynchronous(unsigned char *data, unsigned short size)
 {
   while (size) {
-    SPIPump(*data);
+    SPI.transfer(*data);
     size--;
     data++;
   }
@@ -445,13 +444,8 @@ void SpiReadHeader(void)
 //!          it set the corresponding /CS in active state.
 // 
 //*****************************************************************************
-//#pragma vector=PORT2_VECTOR
-//__interrupt void IntSpiGPIOHandler(void)
 void CC3000InterruptHandler(void)
 {
-
-  if (!SPIInterruptsEnabled)
-    return;
 
   if (sSpiInformation.ulSpiState == eSPI_STATE_POWERUP) {
     /* This means IRQ line was low call a callback of HCI Layer to inform on event */

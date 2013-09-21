@@ -754,7 +754,7 @@ setsockopt(long sd, long level, long optname, const void *optval,
 	else
 	{
 		errno = ret;
-		return ret;
+		return -1;
 	}
 }
 #endif

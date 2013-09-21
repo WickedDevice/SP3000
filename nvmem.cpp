@@ -40,8 +40,11 @@
 //
 //*****************************************************************************
 
+#include <Arduino.h>
 #include <stdio.h>
 #include <string.h>
+#include <avr/pgmspace.h>
+
 #include "nvmem.hpp"
 #include "hci.hpp"
 #include "socket.hpp"
@@ -82,7 +85,8 @@
 //*****************************************************************************
 
 signed long 
-nvmem_read(unsigned long ulFileId, unsigned long ulLength, unsigned long ulOffset, unsigned char *buff)
+nvmem_read(unsigned long ulFileId, unsigned long ulLength,
+    unsigned long ulOffset, unsigned char *buff)
 {
 	unsigned char ucStatus = 0xFF;
 	unsigned char *ptr;
@@ -97,7 +101,10 @@ nvmem_read(unsigned long ulFileId, unsigned long ulLength, unsigned long ulOffse
 	args = UINT32_TO_STREAM(args, ulOffset);
 	
 	// Initiate a HCI command
+	UDR1 = '$';
 	hci_command_send(HCI_CMND_NVMEM_READ, ptr, NVMEM_READ_PARAMS_LEN);
+
+  UDR1 = '%';
 	SimpleLinkWaitEvent(HCI_CMND_NVMEM_READ, &ucStatus);
 	
 	// In case there is data - read it - even if an error code is returned
@@ -106,8 +113,11 @@ nvmem_read(unsigned long ulFileId, unsigned long ulLength, unsigned long ulOffse
 	// Wait for the data in a synchronous way. Here we assume that the buffer is 
 	// big enough to store also parameters of nvmem
 	
+  UDR1 = '&';
 	SimpleLinkWaitData(buff, 0, 0);
 	
+  delay (100);
+	UDR1 = '/';
 	return(ucStatus);
 }
 
@@ -223,11 +233,15 @@ unsigned char nvmem_write_patch(unsigned long ulFileId, unsigned long spLength, 
 {
 	unsigned char 	status = 0;
 	unsigned short	offset = 0;
-	unsigned char*      spDataPtr = (unsigned char*)spData;
+	unsigned char*  spDataPtr = (unsigned char*)spData;
+	unsigned char 	tbuff[SP_PORTION_SIZE];
+	int i;
 	
 	while ((status == 0) && (spLength >= SP_PORTION_SIZE))
 	{
-		status = nvmem_write(ulFileId, SP_PORTION_SIZE, offset, spDataPtr);
+		for (i=0; i<SP_PORTION_SIZE; i++)
+			tbuff[i] = pgm_read_byte(spData + i + offset);
+		status = nvmem_write(ulFileId, SP_PORTION_SIZE, offset, tbuff);
 		offset += SP_PORTION_SIZE;
 		spLength -= SP_PORTION_SIZE;
 		spDataPtr += SP_PORTION_SIZE;
@@ -241,8 +255,9 @@ unsigned char nvmem_write_patch(unsigned long ulFileId, unsigned long spLength, 
 	
 	if (spLength != 0)
 	{
+	  memcpy_P(tbuff, spDataPtr, SP_PORTION_SIZE);
 		// if reached here, a reminder is left
-		status = nvmem_write(ulFileId, spLength, offset, spDataPtr);
+	  status = nvmem_write(ulFileId, spLength, offset, tbuff);
 	}
 	
 	return status;
@@ -325,7 +340,6 @@ nvmem_create_entry(unsigned long ulFileId, unsigned long ulNewLen)
 	hci_command_send(HCI_CMND_NVMEM_CREATE_ENTRY,ptr, NVMEM_CREATE_PARAMS_LEN);
 	
 	SimpleLinkWaitEvent(HCI_CMND_NVMEM_CREATE_ENTRY, &retval);
-	
 	return(retval);
 }
 

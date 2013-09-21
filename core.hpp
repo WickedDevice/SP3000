@@ -18,6 +18,9 @@
 *  Your program must call CC3000_Init() before any other API calls.
 * 
 ****************************************************************************/
+#ifndef __CORE_HPP_GUARD__
+#define __CORE_HPP_GUARD__
+
 #include <Arduino.h>
 
 #include "digitalWriteFast.hpp"
@@ -36,16 +39,29 @@
 #define DISABLE	(0)
 #define ENABLE	(1)
 
+enum interrupt_state {
+  INT_DISABLED = 0,
+  INT_ENABLED = 1
+};
+extern enum interrupt_state wlan_int_status;
+
 extern byte asyncNotificationWaiting;
 extern long lastAsyncEvent;
 extern byte dhcpIPAddress[];
 
 extern volatile unsigned long ulSmartConfigFinished;
-extern volatile unsigned long   ulCC3000Connected;
-extern volatile unsigned long   ulCC3000DHCP;
-extern volatile unsigned long   OkToDoShutDown;
-extern volatile unsigned long   ulCC3000DHCP_configured;
+extern volatile unsigned long ulCC3000Connected;
+extern volatile unsigned long ulCC3000DHCP;
+extern volatile unsigned long OkToDoShutDown;
+extern volatile unsigned long ulCC3000DHCP_configured;
 
 extern volatile unsigned char ucStopSmartConfig;
-extern void CC3000_Init(void);
+extern void CC3000_Init(byte);
 
+/* Function Prototypes */
+inline long ReadWlanInterruptPin(void);
+void WriteWlanEnablePin(unsigned char val);
+void WlanInterruptEnable(void);
+void WlanInterruptDisable(void);
+
+#endif

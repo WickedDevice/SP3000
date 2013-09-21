@@ -40,11 +40,12 @@
  * here: http://processors.wiki.ti.com/index.php/Tiny_Driver_Support
  */
 
-#undef CC3000_TINY_DRIVER  1
+//#define CC3000_TINY_DRIVER  1
+
 /*
  * You can also disable SmartConfig enryption whch will also save us a bunch
  * of memory but will disallow the use of encrypted SmartConfig.
  */
-#undef CC3000_UNENCRYPTED_SMART_CONFIG 1
+//#define CC3000_UNENCRYPTED_SMART_CONFIG 1
 
 #endif

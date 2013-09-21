@@ -51,6 +51,8 @@ byte asyncNotificationWaiting=false;
 long lastAsyncEvent;
 byte dhcpIPAddress[4];
 
+enum interrupt_state wlan_int_status;
+
 /*-------------------------------------------------------------------
 
     The TI library calls this routine when asynchronous events happen.
@@ -174,14 +176,15 @@ inline long ReadWlanInterruptPin(void)
     which tells the CC3000 to turn itself on (HIGH) or off (LOW).
     
  --------------------------------------------------------------------*/
-void WriteWlanEnablePin( unsigned char val ) 
+inline void WriteWlanEnablePin(unsigned char val)
 {
 
+//  digitalWriteFast (WLAN_EN, (val) ? HIGH : LOW);
 	if (val) {
-		digitalWrite(WLAN_EN, HIGH);
+		digitalWriteFast (WLAN_EN, HIGH);
 	}
 	else {
-		digitalWrite(WLAN_EN, LOW);
+		digitalWriteFast (WLAN_EN, LOW);
 	}
 }
 
@@ -199,13 +202,15 @@ void WriteWlanEnablePin( unsigned char val )
  --------------------------------------------------------------------*/
 void WlanInterruptEnable(void) 
 {
-	SPIInterruptsEnabled = 1;
+  wlan_int_status = INT_ENABLED;
+  attachInterrupt(WLAN_IRQ_INTNUM, CC3000InterruptHandler, FALLING);
 }
 
 
 void WlanInterruptDisable(void) 
 {
-	SPIInterruptsEnabled = 0;
+  wlan_int_status = INT_DISABLED;
+  detachInterrupt(WLAN_IRQ_INTNUM);
 }
 
 /*-------------------------------------------------------------------
@@ -217,7 +222,7 @@ void WlanInterruptDisable(void)
     to indicate we're not sending any patches.
     
  --------------------------------------------------------------------*/
-void CC3000_Init(void) 
+void CC3000_Init(byte startReqest)
 {
 	SPIInterruptsEnabled = 0;
 
@@ -228,7 +233,7 @@ void CC3000_Init(void)
 	 * resistors on the signals pulling them to their
 	 * inactive state.
 	 */
-	digitalWrite(WLAN_EN, LOW);	// make sure it's off until we're ready
+	digitalWriteFast (WLAN_EN, LOW);	// make sure it's off until we're ready
 	negate_cs();	// turn off CS until we're ready
 
 	/* Set the modes for the control pins */
@@ -236,7 +241,7 @@ void CC3000_Init(void)
 	pinMode(WLAN_EN, OUTPUT);
 	pinMode(WLAN_CS, OUTPUT);
 
-	attachInterrupt(WLAN_IRQ_INTNUM, CC3000InterruptHandler, FALLING);
+	wlan_int_status = INT_DISABLED;
 
 	delay (100);
 		
@@ -249,6 +254,6 @@ void CC3000_Init(void)
 		WlanInterruptDisable,
 		WriteWlanEnablePin);
 	
-	wlan_start(0);
+	wlan_start(startReqest);
 }
 

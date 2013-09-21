@@ -347,8 +347,8 @@ hci_event_handler(void *pRetParams, unsigned char *from, unsigned char *fromlen)
 							pRetParams = ((char *)pRetParams) + 4;
 							STREAM_TO_UINT32((char *)pucReceivedParams,SL_RECEIVE_NUM_BYTES_OFFSET,*(unsigned long *)pRetParams);
 							pRetParams = ((char *)pRetParams) + 4;
-							STREAM_TO_UINT32((char *)pucReceivedParams,SL_RECEIVE__FLAGS__OFFSET,*(unsigned long *)pRetParams);
-							
+							STREAM_TO_UINT32((char *)pucReceivedParams,SL_RECEIVE__FLAGS__OFFSET,*(unsigned long *)pRetParams);							
+							tBsdReadReturnParams *tread = (tBsdReadReturnParams *)pRetParams;
 							if(((tBsdReadReturnParams *)pRetParams)->iNumberOfBytes == ERROR_SOCKET_INACTIVE)
 							{
 								set_socket_active_status(((tBsdReadReturnParams *)pRetParams)->iSocketDescriptor,SOCKET_STATUS_INACTIVE);
@@ -594,9 +594,16 @@ hci_unsol_event_handler(char *event_hdr)
 			break;
 		case HCI_EVNT_BSD_TCP_CLOSE_WAIT:
 			{
+				// Added fix, still unverified
+				// TODO: Test
+				// Repsonsible: PO
+				unsigned char socketnum;
+				data = (char*)(event_hdr) + HCI_EVENT_HEADER_SIZE;
+				socketnum = data[0];
+
 				if( tSLInformation.sWlanCB )
 				{
-					tSLInformation.sWlanCB(event_type, NULL, 0);
+			      tSLInformation.sWlanCB(event_type, (char *)&socketnum, 1);
 				}
 			}
 			break;
