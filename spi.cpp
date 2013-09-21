@@ -528,3 +528,46 @@ void SpiClose(void)
   tSLInformation.WlanInterruptDisable();
 }
 
+//*****************************************************************************
+//
+//!  SpiInit
+//!
+//!  \param  none
+//!
+//!  \return Success or fail (Not implemented )
+//!
+//!  \brief  Configure SPI hardware for operation with the CC3000
+//
+//*****************************************************************************
+int SpiInit(void)
+{
+
+  // Disable the CC3000 by default */
+  pinMode(WLAN_EN, OUTPUT);
+  digitalWrite(WLAN_EN, 0);
+  delay(500);
+
+  /* Set CS pin to output */
+  pinMode(WLAN_CS, OUTPUT);
+
+  /* Set interrupt pin to input */
+  pinMode(WLAN_IRQ, INPUT);
+  digitalWrite(WLAN_IRQ, HIGH); /* Use a weak pullup */
+
+//  SpiConfigStoreOld(); // prime ccspi_old* values for DEASSERT
+
+  /* Initialise SPI */
+  SPI.begin();
+  SPI.setDataMode(SPI_MODE1);
+  SPI.setBitOrder(MSBFIRST);
+  SPI.setClockDivider(SPI_CLOCK_DIV2);
+
+//  SpiConfigStoreMy(); // prime ccspi_my* values for ASSERT
+
+  // Newly-initialized SPI is in the same state that ASSERT_CS will set it
+  // to.  Invoke DEASSERT (which also restores SPI registers) so the next
+  // ASSERT call won't clobber the ccspi_old* values -- we need those!
+  negate_cs();
+
+  return(0);
+}

@@ -19,6 +19,8 @@
 *  Don't sue me if my code blows up your board and burns down your house
 *
 ****************************************************************************/
+#ifndef __SPI_H_GUARD__
+#define __SPI_H_GUARD__
 
 typedef void (*gcSpiHandleRx)(void *p);
 
@@ -36,3 +38,6 @@ extern void SpiClose(void);
 extern long SpiWrite(unsigned char *pUserBuffer, unsigned short usLength);
 extern void SpiResumeSpi(void);
 extern void CC3000InterruptHandler(void);
+extern int SpiInit (void);
+
+#endif

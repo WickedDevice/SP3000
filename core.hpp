@@ -63,5 +63,9 @@ inline long ReadWlanInterruptPin(void);
 void WriteWlanEnablePin(unsigned char val);
 void WlanInterruptEnable(void);
 void WlanInterruptDisable(void);
+void CC3000_AsyncCallback(long lEventType, char * data, unsigned char length);
+char *SendFirmwarePatch(unsigned long *Length);
+char *SendDriverPatch(unsigned long *Length);
+char *SendBootloaderPatch(unsigned long *Length);
 
 #endif
