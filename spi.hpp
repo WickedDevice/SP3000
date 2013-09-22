@@ -29,8 +29,6 @@ typedef void (*gcSpiHandleRx)(void *p);
 // Prototypes for the APIs.
 //
 //*****************************************************************************
-
-extern short SPIInterruptsEnabled;
 extern unsigned char wlan_tx_buffer[];
 
 extern void SpiOpen(gcSpiHandleRx pfRxHandler);

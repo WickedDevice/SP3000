@@ -25,11 +25,14 @@
 ****************************************************************************/
 
 #include <Arduino.h>
+#include <Wire.h>
 
 #include "core.hpp"
 #include "wlan.hpp"
 #include "hci.hpp"
 #include "spi.hpp"
+#include "pca9536.hpp"
+#include "leds.hpp"
 
 volatile unsigned long ulSmartConfigFinished,
 	ulCC3000Connected,
@@ -72,14 +75,13 @@ void CC3000_AsyncCallback(long lEventType, char * data, unsigned char length)
 	switch (lEventType) {
   
 		case HCI_EVNT_WLAN_ASYNC_SIMPLE_CONFIG_DONE:
-		  Serial.println (F("Done !"));
 			ulSmartConfigFinished = 1;
 			ucStopSmartConfig     = 1;
 			asyncNotificationWaiting=true;
 			break;
 			
 		case HCI_EVNT_WLAN_UNSOL_CONNECT:
-			ulCC3000Connected = 1;
+		  ulCC3000Connected = 1;
 			asyncNotificationWaiting=true;
 			break;
 			
@@ -224,8 +226,12 @@ void WlanInterruptDisable(void)
  --------------------------------------------------------------------*/
 void CC3000_Init(byte startReqest)
 {
-	SPIInterruptsEnabled = 0;
+	/*
+   * Initialize the PCA9536
+   */
+  Wire.begin();
 
+  initled();
 	/* 
 	 * Set the initial state of the output pins before
 	 * enabling them as outputs in order to avoid
@@ -243,7 +249,9 @@ void CC3000_Init(byte startReqest)
 
 	wlan_int_status = INT_DISABLED;
 
+	setled(LED_CON | LED_ACT | LED_ERR | LED_AUX, LED_ON);
 	delay (100);
+  setled(LED_CON | LED_ACT | LED_ERR | LED_AUX, LED_OFF);
 		
 	wlan_init( CC3000_AsyncCallback,
 		SendFirmwarePatch,

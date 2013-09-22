@@ -100,7 +100,8 @@ long netapp_config_mac_adrress(unsigned char * mac)
 //!               AP was established. 
 //!
 //*****************************************************************************
-long netapp_dhcp(unsigned long *aucIP, unsigned long *aucSubnetMask,unsigned long *aucDefaultGateway, unsigned long *aucDNSServer)
+long netapp_dhcp(unsigned long *aucIP, unsigned long *aucSubnetMask,
+    unsigned long *aucDefaultGateway, unsigned long *aucDNSServer)
 {
 	signed char scRet;
 	unsigned char *ptr;
@@ -179,7 +180,8 @@ long netapp_dhcp(unsigned long *aucIP, unsigned long *aucSubnetMask,unsigned lon
 
 #ifndef CC3000_TINY_DRIVER
 long
-netapp_timeout_values(unsigned long *aucDHCP, unsigned long *aucARP,unsigned long *aucKeepalive,	unsigned long *aucInactivity)
+netapp_timeout_values(unsigned long *aucDHCP, unsigned long *aucARP,
+    unsigned long *aucKeepalive,	unsigned long *aucInactivity)
 {
 	signed char scRet;
 	unsigned char *ptr;
@@ -235,7 +237,8 @@ netapp_timeout_values(unsigned long *aucDHCP, unsigned long *aucARP,unsigned lon
 
 #ifndef CC3000_TINY_DRIVER
 long
-netapp_ping_send(unsigned long *ip, unsigned long ulPingAttempts, unsigned long ulPingSize, unsigned long ulPingTimeout)
+netapp_ping_send(unsigned long *ip, unsigned long ulPingAttempts,
+    unsigned long ulPingSize, unsigned long ulPingTimeout)
 {
 	signed char scRet;
 	unsigned char *ptr, *args;
