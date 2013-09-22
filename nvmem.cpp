@@ -101,10 +101,8 @@ nvmem_read(unsigned long ulFileId, unsigned long ulLength,
 	args = UINT32_TO_STREAM(args, ulOffset);
 	
 	// Initiate a HCI command
-	UDR1 = '$';
 	hci_command_send(HCI_CMND_NVMEM_READ, ptr, NVMEM_READ_PARAMS_LEN);
 
-  UDR1 = '%';
 	SimpleLinkWaitEvent(HCI_CMND_NVMEM_READ, &ucStatus);
 	
 	// In case there is data - read it - even if an error code is returned
@@ -113,12 +111,9 @@ nvmem_read(unsigned long ulFileId, unsigned long ulLength,
 	// Wait for the data in a synchronous way. Here we assume that the buffer is 
 	// big enough to store also parameters of nvmem
 	
-  UDR1 = '&';
 	SimpleLinkWaitData(buff, 0, 0);
+ 	return(ucStatus);
 	
-  delay (100);
-	UDR1 = '/';
-	return(ucStatus);
 }
 
 //*****************************************************************************
