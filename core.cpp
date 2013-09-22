@@ -227,11 +227,11 @@ void WlanInterruptDisable(void)
 void CC3000_Init(byte startReqest)
 {
 	/*
-   * Initialize the PCA9536
-   */
-  Wire.begin();
+	* Initialize the PCA9536
+	*/
+	Wire.begin();
 
-  initled();
+	initled();
 	/* 
 	 * Set the initial state of the output pins before
 	 * enabling them as outputs in order to avoid
@@ -251,7 +251,7 @@ void CC3000_Init(byte startReqest)
 
 	setled(LED_CON | LED_ACT | LED_ERR | LED_AUX, LED_ON);
 	delay (100);
-  setled(LED_CON | LED_ACT | LED_ERR | LED_AUX, LED_OFF);
+	setled(LED_CON | LED_ACT | LED_ERR | LED_AUX, LED_OFF);
 		
 	wlan_init( CC3000_AsyncCallback,
 		SendFirmwarePatch,
