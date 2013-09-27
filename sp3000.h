@@ -8,6 +8,7 @@
 #define __SP3000_H_INCLUSION_GUARD__
 
 #include <SPI.h>
+#include "jobqueue.hpp"
 #include "core.hpp"
 #include "hci.hpp"
 #include "security.hpp"

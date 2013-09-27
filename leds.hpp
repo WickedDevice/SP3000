@@ -19,12 +19,11 @@ enum led_state {
   LED_OFF = 0x00,
   LED_ON = 0x01
 };
-typedef enum led_state led_state_t;
 
 //
 // Function prototypes
 //
-void setled (unsigned char led, led_state_t value);
+void setled (uint8_t led, uint8_t value);
 void initled (void);
 
 #endif /* LEDS_HPP_ */

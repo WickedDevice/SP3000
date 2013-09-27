@@ -133,8 +133,7 @@ void SpiTriggerRxProcessing(void)
   // occurred - and we will stuck here forever!
   if (sSpiInformation.pRxPacket[CC3000_RX_BUFFER_SIZE - 1]
       != CC3000_BUFFER_MAGIC_NUMBER) {
-    while (1)
-      ;
+    while (1);
   }
 
   sSpiInformation.ulSpiState = eSPI_STATE_IDLE;
@@ -250,13 +249,11 @@ long SpiWrite(unsigned char *pUserBuffer, unsigned short usLength)
   // for the purpose of overrun detection. If the magic number is overwritten - buffer overrun
   // occurred - and we will be stuck here forever!
   if (wlan_tx_buffer[CC3000_TX_BUFFER_SIZE - 1] != CC3000_BUFFER_MAGIC_NUMBER) {
-    while (1)
-      ;
+    while (1);
   }
 
   if (sSpiInformation.ulSpiState == eSPI_STATE_POWERUP) {
-    while (sSpiInformation.ulSpiState != eSPI_STATE_INITIALIZED)
-      ;
+    while (sSpiInformation.ulSpiState != eSPI_STATE_INITIALIZED);
   }
 
   if (sSpiInformation.ulSpiState == eSPI_STATE_INITIALIZED) {
@@ -271,9 +268,7 @@ long SpiWrite(unsigned char *pUserBuffer, unsigned short usLength)
     //
     tSLInformation.WlanInterruptDisable();
 
-    while (sSpiInformation.ulSpiState != eSPI_STATE_IDLE) {
-      ;
-    }
+    while (sSpiInformation.ulSpiState != eSPI_STATE_IDLE);
 
     sSpiInformation.ulSpiState = eSPI_STATE_WRITE_IRQ;
     sSpiInformation.pTxPacket = pUserBuffer;
@@ -307,8 +302,7 @@ long SpiWrite(unsigned char *pUserBuffer, unsigned short usLength)
   // here we will wait till end of transaction
   //
 
-  while (eSPI_STATE_IDLE != sSpiInformation.ulSpiState)
-    ;
+  while (eSPI_STATE_IDLE != sSpiInformation.ulSpiState);
 
   return (0);
 }

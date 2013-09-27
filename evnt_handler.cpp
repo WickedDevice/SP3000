@@ -596,7 +596,7 @@ hci_unsol_event_handler(char *event_hdr)
 			{
 				// Added fix, still unverified
 				// TODO: Test
-				// Repsonsible: PO
+				// Responsible: PO
 				unsigned char socketnum;
 				data = (char*)(event_hdr) + HCI_EVENT_HEADER_SIZE;
 				socketnum = data[0];

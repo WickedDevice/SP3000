@@ -9,7 +9,7 @@
 #include "pca9536.hpp"
 #include "leds.hpp"
 
-void setled (unsigned char led, led_state_t value)
+void setled (uint8_t led, uint8_t value)
 {
   // The system always starts with all LED's off
   static byte led_shadow = 0x00;
