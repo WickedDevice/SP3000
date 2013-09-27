@@ -77,6 +77,9 @@ char process_jobs (void)
       case JOB_CLR_LED:
         setled (job.data, 0);
         break;
+
+      case JOB_DELAYED_CLR:
+
     }
   }
 }
