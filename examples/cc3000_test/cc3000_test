@@ -1,31 +1,56 @@
 /*
-  Blink
-  Turns on an LED on for one second, then off for one second, repeatedly.
+  CC3000 test program.
+  This program have a simple menu for probing different functions of the
+  CC3000 connected to a Arduino system.
  
   This example code is in the public domain.
  */
 
-// Pin 13 has an LED connected on most Arduino boards.
-// give it a name:
-int led = 13;
-byte isInitialized = false;
+// This macro disables a few functions to ensure that the program fits inside
+// a Sweet Pea LeoFi
+#define LEOFI
 
-// the setup routine runs once when you press reset:
+#ifdef LEOFI
+  #define CC3000_MODE      0
+  #define CC3000_CS_PIN    6
+  #define CC3000_EN_PIN    5
+  #define CC3000_IRQ_PIN   7
+  #define CC3000_IRQ_LEVEL 4
+  // Se
+  #define lSer             Serial
+#else
+  #define CC3000_MODE      0
+  #define CC3000_CS_PIN    10
+  #define CC3000_EN_PIN    7
+  #define CC3000_IRQ_PIN   3
+  #define CC3000_IRQ_LEVEL 1
+  // I normally use a USB to serial cable connected to Serial1 on a Sweet Pea Mega
+  // board. You can change it to anything you want.
+  #define lSer             Serial1
+  #define SD_CARD_CS_PIN   4
+  #define SRAM_CS_PIN      9
+  #define UDP_TEST
+#endif
+
 #include <sp3000.h>
-#include <sweetpea-board.h>
 #include <SPI.h>
+#include <Wire.h>
 
-#define BLINKER_LED	13
-#define SD_CARD_CS      4
-#define SRAM_CS         9
+// Global variable that holds the initialized status of the 
+// CC3000 module.
+byte isInitialized = false;
 
 void setup(void)
 {
-  setup_sweetpea_board(SWEET_PEA_WIFI_SHIELD);
-
-  Serial1.begin(115200);
-
-  pinMode(BLINKER_LED, OUTPUT);
+  lSer.begin(115200);
+  lSer.println (F("ON"));
+  
+#ifndef LEOFI
+  digitalWrite(SD_CARD_CS_PIN, HIGH);
+  digitalWrite(SRAM_CS_PIN, HIGH);
+  pinMode(SD_CARD_CS_PIN, OUTPUT);
+  pinMode(SRAM_CS_PIN, OUTPUT);
+#endif
 
   SPI.begin();
   SPI.setDataMode(SPI_MODE1);
@@ -33,6 +58,12 @@ void setup(void)
   SPI.setClockDivider(SPI_CLOCK_DIV2);
   
   pinMode(53, OUTPUT);
+  
+#ifdef LEOFI
+  // Leonardo needs to wait for a serial connection.
+  while (!lSer);
+  lSer.println (F("Connected to LeoFfi !"));
+#endif
 }
 
 void AsyncEventPrint(void)
@@ -40,43 +71,47 @@ void AsyncEventPrint(void)
   switch (lastAsyncEvent) 
   {
     case HCI_EVNT_WLAN_ASYNC_SIMPLE_CONFIG_DONE:
-      Serial1.println(F("\nCC3000 Async event: Simple config done"));
+      lSer.println(F("\nCC3000 Async event: Simple config done"));
       break;
 
     case HCI_EVNT_WLAN_UNSOL_CONNECT:
-      Serial1.println(F("\nCC3000 Async event: Unsolicited connect"));
+      setled (LED_CON, LED_ON);
+      lSer.println(F("\nCC3000 Async event: Unsolicited connect"));
       break;
 
     case HCI_EVNT_WLAN_UNSOL_DISCONNECT:
-      Serial1.println(F("\nCC3000 Async event: Unsolicted disconnect"));
+      setled (LED_CON, LED_OFF);
+      lSer.println(F("\nCC3000 Async event: Unsolicted disconnect"));
       break;
 
     case HCI_EVNT_WLAN_UNSOL_DHCP:
-      Serial1.print(F("\nCC3000 Async event: Got IP address via DHCP: "));
-      Serial1.print(dhcpIPAddress[0]);
-      Serial1.print(F("."));
-      Serial1.print(dhcpIPAddress[1]);
-      Serial1.print(F("."));
-      Serial1.print(dhcpIPAddress[2]);
-      Serial1.print(F("."));
-      Serial1.println(dhcpIPAddress[3]);
+      setled (LED_ACT, LED_ON);
+      lSer.print(F("\nCC3000 Async event: Got IP address via DHCP: "));
+      lSer.print(dhcpIPAddress[0]);
+      lSer.print(F("."));
+      lSer.print(dhcpIPAddress[1]);
+      lSer.print(F("."));
+      lSer.print(dhcpIPAddress[2]);
+      lSer.print(F("."));
+      lSer.println(dhcpIPAddress[3]);
+      setled (LED_ACT, LED_OFF);
       break;
 
     case HCI_EVENT_CC3000_CAN_SHUT_DOWN:
-      Serial1.println(F("\nCC3000 Async event: OK to shut down"));
+      lSer.println(F("\nCC3000 Async event: OK to shut down"));
       break;
 
     case HCI_EVNT_WLAN_KEEPALIVE:
       // Once initialized, the CC3000 will send these keepalive events
       // every 20 seconds.
-      //Serial1.println(F("CC3000 Async event: Keepalive"));
+      //lSer.println(F("CC3000 Async event: Keepalive"));
       return;
       break;
 
     default:
-      Serial1.print(F("\nAsyncCallback called with unhandled event! ("));
-      Serial1.print(lastAsyncEvent, HEX);
-      Serial1.println(F(")"));
+      lSer.print(F("\nAsyncCallback called with unhandled event! ("));
+      lSer.print(lastAsyncEvent, HEX);
+      lSer.println(F(")"));
       break;
   }
 }
@@ -85,63 +120,73 @@ void loop(void)
 {
   char cmd;
 
-  Serial1.println();
-  Serial1.println(F("  ----------------------------------------------"));
-  Serial1.println(F("  |  Sweet Pea WiFi Sheild Test Suite V0.11    |"));
-  Serial1.println(F("  ----------------------------------------------"));
-  Serial1.println(F("  |                                            |"));
-  Serial1.println(F("  |  1.  Initialize CC3000 chip and subsystem  |"));
-  Serial1.println(F("  |  2.  Search for available AP's             |"));
-  Serial1.println(F("  |  3.  Start a Smart Config sequence         |"));
-  Serial1.println(F("  |  4.  Manually connect to an access point   |"));
-  Serial1.println(F("  |  5.  Manually add a connection profile     |"));
-  Serial1.println(F("  |  6.  Network Parameters                    |"));
-  Serial1.println(F("  |  7.  Run SPI Test Sequence                 |"));
-  Serial1.println(F("  |  8.  Run digitalFastWrite Test Sequence    |"));
-  Serial1.println(F("  |  9.  System Information                    |"));
-  Serial1.println(F("  |  A.  Set up listening socket               |"));
-  Serial1.println(F("  |                                            |"));
-  Serial1.println(F("  ----------------------------------------------"));
-  Serial1.println();
-  Serial1.print(F("              Select (1-9): "));
+  lSer.println();
+  lSer.println(F("  ----------------------------------------------"));
+  lSer.println(F("  |  Sweet Pea WiFi Sheild Test Suite V0.11    |"));
+  lSer.println(F("  ----------------------------------------------"));
+  lSer.println(F("  |                                            |"));
+  lSer.println(F("  |  1.  Initialize CC3000 chip and subsystem  |"));
+  lSer.println(F("  |  2.  Search for available AP's             |"));
+  lSer.println(F("  |  3.  Start a Smart Config sequence         |"));
+#ifndef LEOFI
+  lSer.println(F("  |  4.  Manually connect to an access point   |"));
+  lSer.println(F("  |  5.  Manually add a connection profile     |"));
+#endif
+  lSer.println(F("  |  6.  Network Parameters                    |"));
+#ifndef LEOFI
+  lSer.println(F("  |  7.  Run SPI Test Sequence                 |"));
+  lSer.println(F("  |  8.  Run digitalFastWrite Test Sequence    |"));
+  lSer.println(F("  |  9.  System Information                    |"));
+  lSer.println(F("  |  A.  Set up listening socket               |"));
+#endif
+  lSer.println(F("  |  B.  Connect to test client                |"));  
+  lSer.println(F("  |                                            |"));
+  lSer.println(F("  ----------------------------------------------"));
+  lSer.println();
+  lSer.print(F("              Select (1-9): "));
 
   for (;;) {
-    while (!Serial1.available()) {
+    while (!lSer.available()) {
       if (asyncNotificationWaiting) {
         asyncNotificationWaiting = false;
         AsyncEventPrint();
       }
     }
-    cmd = Serial1.read();
+    cmd = lSer.read();
     if (cmd != '\n' && cmd != '\r') {
       break;
     }
   }
-  Serial1.println();
+  lSer.println();
 
   switch (cmd) {
     case '1':
       Initialize();
       break;
+#ifndef LEOFI
     case '9':
       ShowBufferSize();
       ShowFreeRAM();
       break;
+#endif
     case '3':
       StartSmartConfig();
       break;
+#ifndef LEOFI
     case '4':
       ManualConnect();
       break;
     case '5':
       ManualAddProfile();
       break;
+#endif
     case '2':
       ListAccessPoints();
       break;
     case '6':
       ShowInformation();
       break;
+#ifndef LEOFI
     case '7':
       spi_test();
       break;
@@ -149,8 +194,15 @@ void loop(void)
       fastwrite_test();
       break;
     case 'A':
+    case 'a':
       setup_listening_socket();
       break;
+#endif
+    case 'B':
+    case 'b':
+      client_connect();
+      break;
+      
     default:
       break;
   }
@@ -171,14 +223,14 @@ void setup_listening_socket(void)
   sockaddr clientaddr;
   socklen_t addrlen;
 
-  Serial1.println(F("  **********************************************"));
-  Serial1.println(F("  *            Starting a TCP server           *"));
-  Serial1.println(F("  **********************************************"));
+  lSer.println(F("  **********************************************"));
+  lSer.println(F("  *            Starting a TCP server           *"));
+  lSer.println(F("  **********************************************"));
 
   /* Create a socket handle to use with the listening socket */
   s = socket(AF_INET, SOCK_STREAM, 0);
   if (s < 0) {
-    Serial1.println(F("Failed to create socket"));
+    lSer.println(F("Failed to create socket"));
     return;
   }
 
@@ -199,32 +251,87 @@ void setup_listening_socket(void)
 
 #if 0
 if (bind(s, &sa, sizeof(sockaddr)) != 0) {
-    Serial1.println(F("The bind operation failed"));
+    lSer.println(F("The bind operation failed"));
     return;
   }
 #endif
 
   // Start Listening
   if (listen(s, 1) != 0) {
-    Serial1.println(F("Failed to start listening"));
+    lSer.println(F("Failed to start listening"));
     return;
   }
   addrlen = sizeof (clientaddr);
 
-  Serial1.print(F("Server socket started on port "));
-  Serial1.println(port);
+  lSer.print(F("Server socket started on port "));
+  lSer.println(port);
   
   clientDescriptor = accept(s, (sockaddr *) &clientaddr, &addrlen);
   
-  Serial1.print (F("Accept returned "));
-  Serial1.println (clientDescriptor);
+  lSer.print (F("Accept returned "));
+  lSer.println (clientDescriptor);
+}
+
+
+#define WEBSITE      "www.sweetpeas.se"
+#define WEBPAGE      "/test.htm"
+void client_connect(void)
+{
+  uint32_t s;
+  uint32_t IP = packIP(192,168,0,96);
+  uint16_t port = 80;
+  
+  s = sp_connect(IP, port, IPPROTO_TCP);
+  if (s < 0) {
+    lSer.println (F("Error while trying to connect to TCP port on remote server !"));
+  } else {
+    lSer.print (F("Successfully connected !!!"));
+    
+    // Make a http get request
+    send_F (s, F("GET "));
+    send_F (s, F(WEBPAGE));
+    send_F (s, F(" HTTP/1.0\r\n"));
+    send_F (s, F("Host: "));
+    send_F (s, F(WEBSITE));
+    send_F (s, F("\n"));
+    send_F (s, F("Connection: close\n"));
+    send_F (s, F("\n"));
+
+    while (data_available(s)) {
+      char c = read_data(s);
+      lSer.write(c);
+    }
+    
+    
+    closesocket(s);
+  }
+
+#ifdef UDP_TEST
+  port = 2000;
+  s = sp_connect(IP, port, IPPROTO_UDP);
+  if (s < 0) {
+    lSer.println (F("Error while trying to connect to UDP port on remote server !"));
+  } else {
+    byte i;
+    
+    lSer.print (F("Successfully connected !!!, got socket "));
+    lSer.println (s);
+
+    for (i=0;i<4;i++) {
+      if (send (s, "Helloooo my friend\n", 20, 0) < 0) {
+        lSer.println (F("Failed to send data !"));
+      }
+    }
+    closesocket(s);
+  }
+#endif
 }
 
 byte fastwrite_test(void)
 {
   byte a;
 
-  Serial1.print(F("Testing digitalFastWrite returns"));
+  lSer.print(F("Testing digitalFastWrite returns"));
 
   pinMode(10, OUTPUT);
   pinMode(11, OUTPUT);
@@ -259,7 +366,7 @@ byte fastwrite_test(void)
   a = digitalReadFast(10);
   a = digitalReadFast(10);
   a = digitalReadFast(10);
-  a = digitalReadFast(WLAN_IRQ);
+//  a = digitalReadFast(WLAN_IRQ);
 
   if (a)
     a = 0xff;
@@ -271,7 +378,7 @@ byte fastwrite_test(void)
 
 void spi_test(void)
 {
-  Serial1.print(F("SPI Test\n"));
+  lSer.print(F("SPI Test\n"));
 
   digitalWrite(2, LOW);
   SPI.transfer(0x00);
@@ -280,9 +387,9 @@ void spi_test(void)
 
 byte printStep(byte step)
 {
-  Serial1.print(F("  Step: "));
-  Serial1.print(step);
-  Serial1.print(F(" - "));
+  lSer.print(F("  Step: "));
+  lSer.print(step);
+  lSer.print(F(" - "));
   return step + 1;
 }
 
@@ -294,60 +401,60 @@ void Initialize(void)
   unsigned char fancyBuffer[MAC_ADDR_LEN];
   byte step = 1;
 
-  Serial1.println(F("  **********************************************"));
-  Serial1.println(F("  *     Initializing CC3000 and subsystem !    *"));
-  Serial1.println(F("  **********************************************"));
+  lSer.println(F("  **********************************************"));
+  lSer.println(F("  *     Initializing CC3000 and subsystem !    *"));
+  lSer.println(F("  **********************************************"));
 
   if (isInitialized) {
     step = printStep(step);
-    Serial1.println(F("  Warning: CC3000 system initialization already performed."));
-    Serial1.println(F("           Stopping CC3000 subsystem and reinitializing !"));
+    lSer.println(F("Warning: CC3000 system initialization already performed."));
+    lSer.println(F("            Stopping CC3000 subsystem and reinitializing !"));
     wlan_stop();
     delay(1000);
   }
 
   step = printStep(step);
-  Serial1.println(F("Initializing CC3000..."));
-  CC3000_Init (0);
-  Serial1.println(F("            CC3000 init complete."));
+  lSer.println(F("Initializing CC3000..."));
+  CC3000_Init (CC3000_MODE, CC3000_CS_PIN, CC3000_EN_PIN, CC3000_IRQ_PIN, CC3000_IRQ_LEVEL);
+  lSer.println(F("            CC3000 init complete."));
 
   step = printStep(step);
   if (nvmem_read_sp_version(fancyBuffer) == 0) {
-    Serial1.print(F("Firmware version: "));
-    Serial1.print(fancyBuffer[0], DEC);
-    Serial1.print(F("."));
-    Serial1.println(fancyBuffer[1], DEC);
+    lSer.print(F("Firmware version: "));
+    lSer.print(fancyBuffer[0], DEC);
+    lSer.print(F("."));
+    lSer.println(fancyBuffer[1], DEC);
   } else {
-    Serial1.println(F("Error - Unable to get firmware version. Can't continue."));
+    lSer.println(F("Error - Unable to get firmware version. Can't continue."));
     return;
   }
 
   step = printStep(step);
   if (nvmem_get_mac_address(fancyBuffer) == 0) {
-    Serial1.print(F("MAC address: "));
+    lSer.print(F("MAC address: "));
     for (byte i = 0; i < MAC_ADDR_LEN; i++) {
       if (i != 0) {
-        Serial1.print(F(":"));
+        lSer.print(F(":"));
       }
-      Serial1.print(fancyBuffer[i], HEX);
+      lSer.print(fancyBuffer[i], HEX);
     }
-    Serial1.println();
+    lSer.println();
 
     isInitialized = true;
   } else {
-    Serial1.println(F("Unable to get MAC address. Can't continue."));
+    lSer.println(F("Unable to get MAC address. Can't continue."));
   }
 }
 
 void ShowBufferSize(void)
 {
-  Serial1.print(F("Transmit buffer is "));
-  Serial1.print(CC3000_TX_BUFFER_SIZE);
-  Serial1.println(F(" bytes"));
+  lSer.print(F("Transmit buffer is "));
+  lSer.print(CC3000_TX_BUFFER_SIZE);
+  lSer.println(F(" bytes"));
 
-  Serial1.print(F("Receive buffer is "));
-  Serial1.print(CC3000_RX_BUFFER_SIZE);
-  Serial1.println(F(" bytes"));
+  lSer.print(F("Receive buffer is "));
+  lSer.print(CC3000_RX_BUFFER_SIZE);
+  lSer.println(F(" bytes"));
 }
 
 int freeRam()
@@ -363,17 +470,9 @@ int freeRam()
 
 void ShowFreeRAM(void)
 {
-  Serial1.print(F("Free RAM is: "));
-  Serial1.print(freeRam());
-  Serial1.println(F(" bytes"));
-}
-
-void Blinker(void)
-{
-  digitalWrite(BLINKER_LED, HIGH);
-  delay(50);
-  digitalWrite(BLINKER_LED, LOW);
-  delay(250);
+  lSer.print(F("Free RAM is: "));
+  lSer.print(freeRam());
+  lSer.println(F(" bytes"));
 }
 
 /*
@@ -407,43 +506,41 @@ void StartSmartConfig(void)
   long timeoutCounter;
 
   if (!isInitialized) {
-    Serial1.println(F("CC3000 not initialized; can't run Smart Config."));
+    lSer.println(F("CC3000 not initialized; can't run Smart Config."));
     return;
   }
 
-  Serial1.println(F("Starting Smart Config..."));
+  lSer.println(F("Starting Smart Config..."));
 
-  Serial1.println(F("  Disabling auto-connect policy..."));
+  lSer.println(F("  Disabling auto-connect policy..."));
   if ((rval = wlan_ioctl_set_connection_policy(DISABLE, DISABLE, DISABLE))
       != 0) {
-    Serial1.print(F("    Setting auto connection policy failed, error: "));
-    Serial1.println(rval, HEX);
+    lSer.print(F("    Setting auto connection policy failed, error: "));
+    lSer.println(rval, HEX);
     return;
   }
 
-  Serial1.println(F("  Deleting all existing profiles..."));
+  lSer.println(F("  Deleting all existing profiles..."));
   if ((rval = wlan_ioctl_del_profile(255)) != 0) {
-    Serial1.print(F("    Deleting all profiles failed, error: "));
-    Serial1.println(rval, HEX);
+    lSer.print(F("    Deleting all profiles failed, error: "));
+    lSer.println(rval, HEX);
     return;
   }
 
-  Serial1.println(F("  Waiting until disconnected..."));
-  while (ulCC3000Connected == 1) {
-    Blinker();
-  }
+  lSer.println(F("  Waiting until disconnected..."));
+  while (ulCC3000Connected == 1);
 
-  Serial1.println(F("  Setting smart config prefix..."));
+  lSer.println(F("  Setting smart config prefix..."));
   if ((rval = wlan_smart_config_set_prefix(simpleConfigPrefix)) != 0) {
-    Serial1.print(F("    Setting smart config prefix failed, error: "));
-    Serial1.println(rval, HEX);
+    lSer.print(F("    Setting smart config prefix failed, error: "));
+    lSer.println(rval, HEX);
     return;
   }
 
-  Serial1.println(F("  Starting smart config..."));
+  lSer.println(F("  Starting smart config..."));
   if ((rval = wlan_smart_config_start(0)) != 0) {
-    Serial1.print(F("    Starting smart config failed, error: "));
-    Serial1.println(rval, HEX);
+    lSer.print(F("    Starting smart config failed, error: "));
+    lSer.println(rval, HEX);
     return;
   }
 
@@ -453,48 +550,43 @@ void StartSmartConfig(void)
   // temporary workaround is I just stop waiting after a while
   timeoutCounter = millis();
   while (ulSmartConfigFinished == 0) {
-    Blinker();
     if (millis() - timeoutCounter > 30000) {
-      Serial1.println(F("    Timed out waiting for Smart Config to finish. Hopefully it did anyway"));
+      lSer.println(F("    Timed out waiting for Smart Config to finish. Hopefully it did anyway"));
       break;
     }
   }
 
-  Serial1.println(F("  Smart Config packet seen!"));
+  lSer.println(F("  Smart Config packet seen!"));
 
-  Serial1.println(F("  Enabling auto-connect policy..."));
+  lSer.println(F("  Enabling auto-connect policy..."));
   if ((rval = wlan_ioctl_set_connection_policy(DISABLE, DISABLE, ENABLE))
       != 0) {
-    Serial1.print(F("    Setting auto connection policy failed, error: "));
-    Serial1.println(rval, HEX);
+    lSer.print(F("    Setting auto connection policy failed, error: "));
+    lSer.println(rval, HEX);
     return;
   }
 
-  Serial1.println(F("  Stopping CC3000..."));
+  lSer.println(F("  Stopping CC3000..."));
   wlan_stop();	// no error returned here, so nothing to check
 
-  Serial1.println(F("  Pausing for 2 seconds..."));
+  lSer.println(F("  Pausing for 2 seconds..."));
   delay(2000);
 
-  Serial1.println(F("  Restarting CC3000... "));
+  lSer.println(F("  Restarting CC3000... "));
   wlan_start(0);	// no error returned here, so nothing to check
 
-  Serial1.println(F("  Waiting for connection to AP..."));
-  while (ulCC3000Connected != 1) {
-    Blinker();
-  }
+  lSer.println(F("  Waiting for connection to AP..."));
+  while (ulCC3000Connected != 1);
 
-  Serial1.println(F("  Waiting for IP address from DHCP..."));
-  while (ulCC3000DHCP != 1) {
-    Blinker();
-  }
+  lSer.println(F("  Waiting for IP address from DHCP..."));
+  while (ulCC3000DHCP != 1);
 
-  Serial1.println(F("  Sending mDNS broadcast to signal we're done with Smart Config..."));
+  lSer.println(F("  Sending mDNS broadcast to signal we're done with Smart Config..."));
   mdnsAdvertiser(1, device_name, strlen(device_name)); // The API documentation says mdnsAdvertiser()
   // is supposed to return 0 on success and SOC_ERROR on failure, but it looks like
   // what it actually returns is the socket number it used. So we ignore it.
 
-  Serial1.println(F("  Smart Config finished!"));
+  lSer.println(F("  Smart Config finished!"));
 }
 
 /*
@@ -513,24 +605,24 @@ void ManualConnect(void)
   byte rval;
 
   if (!isInitialized) {
-    Serial1.println(F("CC3000 not initialized; can't run manual connect."));
+    lSer.println(F("CC3000 not initialized; can't run manual connect."));
     return;
   }
 
-  Serial1.println(F("Starting manual connect..."));
+  lSer.println(F("Starting manual connect..."));
 
-  Serial1.println(F("  Disabling auto-connect policy..."));
+  lSer.println(F("  Disabling auto-connect policy..."));
   rval = wlan_ioctl_set_connection_policy(DISABLE, DISABLE, DISABLE);
 
-  Serial1.println(F("  Deleting all existing profiles..."));
+  lSer.println(F("  Deleting all existing profiles..."));
   rval = wlan_ioctl_del_profile(255);
 
-  Serial1.println(F("  Waiting until disconnected..."));
+  lSer.println(F("  Waiting until disconnected..."));
   while (ulCC3000Connected == 1) {
     delay(100);
   }
 
-  Serial1.println(F("  Manually connecting..."));
+  lSer.println(F("  Manually connecting..."));
 
   // Parameter 1 is the security type: WLAN_SEC_UNSEC, WLAN_SEC_WEP,
   //				WLAN_SEC_WPA or WLAN_SEC_WPA2
@@ -541,10 +633,10 @@ void ManualConnect(void)
       (unsigned char *) AP_KEY, strlen(AP_KEY));
 
   if (rval == 0) {
-    Serial1.println(F("  Manual connect success."));
+    lSer.println(F("  Manual connect success."));
   } else {
-    Serial1.print(F("  Unusual return value: "));
-    Serial1.println(rval);
+    lSer.print(F("  Unusual return value: "));
+    lSer.println(rval);
   }
 }
 
@@ -572,16 +664,16 @@ void ManualAddProfile(void)
   char AP_KEY[] = "cromulent";
 
   if (!isInitialized) {
-    Serial1.println(F("CC3000 not initialized; can't run manual add profile."));
+    lSer.println(F("CC3000 not initialized; can't run manual add profile."));
     return;
   }
 
-  Serial1.println(F("Starting manual add profile..."));
+  lSer.println(F("Starting manual add profile..."));
 
-  Serial1.println(F("  Disabling auto connection..."));
+  lSer.println(F("  Disabling auto connection..."));
   wlan_ioctl_set_connection_policy(DISABLE, DISABLE, DISABLE);
 
-  Serial1.println(F("  Adding profile..."));
+  lSer.println(F("  Adding profile..."));
   byte rval = wlan_add_profile(WLAN_SEC_WPA2,	// WLAN_SEC_UNSEC, WLAN_SEC_WEP, WLAN_SEC_WPA or WLAN_SEC_WPA2
       (unsigned char *) ssidName, strlen(ssidName), NULL,	// BSSID, TI always uses NULL
       0,					// profile priority
@@ -597,25 +689,25 @@ void ManualAddProfile(void)
     // This code is lifted from http://e2e.ti.com/support/low_power_rf/f/851/p/180859/672551.aspx;
     // the actual API documentation on wlan_add_profile doesn't specify any of this....
 
-    Serial1.print(F("  Manual add profile success, stored in profile: "));
-    Serial1.println(rval, DEC);
+    lSer.print(F("  Manual add profile success, stored in profile: "));
+    lSer.println(rval, DEC);
 
-    Serial1.println(F("  Enabling auto connection..."));
+    lSer.println(F("  Enabling auto connection..."));
     wlan_ioctl_set_connection_policy(DISABLE, DISABLE, ENABLE);
 
-    Serial1.println(F("  Stopping CC3000..."));
+    lSer.println(F("  Stopping CC3000..."));
     wlan_stop();
 
-    Serial1.println(F("  Stopping for 5 seconds..."));
+    lSer.println(F("  Stopping for 5 seconds..."));
     delay(5000);
 
-    Serial1.println(F("  Restarting CC3000..."));
+    lSer.println(F("  Restarting CC3000..."));
     wlan_start(0);
 
-    Serial1.println(F("  Manual add profile done!"));
+    lSer.println(F("  Manual add profile done!"));
 
   } else {
-    Serial1.print(F("  Manual add profile failured (all profiles full?)."));
+    lSer.print(F("  Manual add profile failured (all profiles full?)."));
   }
 }
 
@@ -653,7 +745,7 @@ void ManualAddProfile(void)
 
  ssid_name - 32 bytes - The ssid name for this AP. Note that this isn't a
  regular null-terminated C string so you can't use it
- directly with a strcpy() or Serial1.println() etc. and you'll
+ directly with a strcpy() or lSer.println() etc. and you'll
  need a 33-byte string to store it (32 valid characters +
  null terminator)
 
@@ -686,18 +778,18 @@ void ListAccessPoints(void)
   byte step = 1;
   byte i, j;
 
-  Serial1.println(F("  **********************************************"));
-  Serial1.println(F("  *   Search for available wireless networks   *"));
-  Serial1.println(F("  **********************************************"));
+  lSer.println(F("  **********************************************"));
+  lSer.println(F("  *   Search for available wireless networks   *"));
+  lSer.println(F("  **********************************************"));
 
   if (!isInitialized) {
     step = printStep(step);
-    Serial1.println(F("Warning - System not initialized, can't access WiFi Chip."));
+    lSer.println(F("Warning - System not initialized, can't access WiFi Chip."));
     return;
   }
 
   step = printStep(step);
-  Serial1.print(F("Starting to scan for access points"));
+  lSer.print(F("Starting to scan for access points"));
 
   for (int i = 0; i < NUM_CHANNELS; i++) {
     aiIntervalList[i] = 2000;
@@ -715,15 +807,15 @@ void ListAccessPoints(void)
       aiIntervalList	// table of scan intervals per channel
       );
   if (rval != 0) {
-    Serial1.println();
-    Serial1.print(F("Got back unusual result from wlan_ioctl_set_scan_params, can't continue: "));
-    Serial1.println(rval);
+    lSer.println();
+    lSer.print(F("Got back unusual result from wlan_ioctl_set_scan_params, can't continue: "));
+    lSer.println(rval);
     return;
   }
 
   for (i = 0; i < 10; i++) {
     delay(500);
-    Serial1.print(".");
+    lSer.print(".");
   }
 
   // On the first call to get_scan_results, sr.numNetworksFound will return the
@@ -731,52 +823,52 @@ void ListAccessPoints(void)
   // out what's found.
 
   if ((rval = wlan_ioctl_get_scan_results(2000, (unsigned char *) &sr)) != 0) {
-    Serial1.println();
-    Serial1.print(F("Got back unusual result from wlan_ioctl_get scan results, can't continue: "));
-    Serial1.println(rval);
+    lSer.println();
+    lSer.print(F("Got back unusual result from wlan_ioctl_get scan results, can't continue: "));
+    lSer.println(rval);
     return;
   }
 
   apCounter = sr.numNetworksFound;
-  Serial1.println();
-  Serial1.println();
-  Serial1.print(F("            Number of access points found: "));
-  Serial1.println(apCounter);
+  lSer.println();
+  lSer.println();
+  lSer.print(F("            Number of access points found: "));
+  lSer.println(apCounter);
 
-  Serial1.println();
-  Serial1.println(F("              Encrypt   Rssi  SSID"));
-  Serial1.println(F("            ----------------------------------------------"));
+  lSer.println();
+  lSer.println(F("              Encrypt   Rssi  SSID"));
+  lSer.println(F("            ----------------------------------------------"));
 
   do {
     if (sr.isValid) {
-      Serial1.print(F("              "));
+      lSer.print(F("              "));
       switch (sr.securityMode) {
         case WLAN_SEC_UNSEC:	// 0
-          Serial1.print(F("OPEN "));
+          lSer.print(F("OPEN "));
           break;
         case WLAN_SEC_WEP:		// 1
-          Serial1.print(F("WEP  "));
+          lSer.print(F("WEP  "));
           break;
         case WLAN_SEC_WPA:		// 2
-          Serial1.print(F("WPA  "));
+          lSer.print(F("WPA  "));
           break;
         case WLAN_SEC_WPA2:		// 3
-          Serial1.print(F("WPA2 "));
+          lSer.print(F("WPA2 "));
           break;
       }
       sprintf(localB, "%3d  ", sr.rssi);
-      Serial1.print(F("      "));
-      Serial1.print(localB);
+      lSer.print(F("      "));
+      lSer.print(localB);
       memset(localB, 0, 33);
       memcpy(localB, sr.ssid_name, sr.ssidLength);
-      Serial1.println(localB);
+      lSer.println(localB);
     }
 
     if (--apCounter > 0) {
       if ((rval = wlan_ioctl_get_scan_results(2000, (unsigned char *) &sr))
           != 0) {
-        Serial1.print(F("  Got back unusual result from wlan_ioctl_get scan results, can't continue: "));
-        Serial1.println(rval);
+        lSer.print(F("  Got back unusual result from wlan_ioctl_get scan results, can't continue: "));
+        lSer.println(rval);
         return;
       }
     }
@@ -785,13 +877,13 @@ void ListAccessPoints(void)
 
 void PrintIPBytes(unsigned char *ipBytes)
 {
-  Serial1.print(ipBytes[3]);
-  Serial1.print(F("."));
-  Serial1.print(ipBytes[2]);
-  Serial1.print(F("."));
-  Serial1.print(ipBytes[1]);
-  Serial1.print(F("."));
-  Serial1.println(ipBytes[0]);
+  lSer.print(ipBytes[3]);
+  lSer.print(F("."));
+  lSer.print(ipBytes[2]);
+  lSer.print(F("."));
+  lSer.print(ipBytes[1]);
+  lSer.print(F("."));
+  lSer.println(ipBytes[0]);
 }
 
 /*
@@ -811,42 +903,42 @@ void ShowInformation(void)
   char localB[33];
 
   if (!isInitialized) {
-    Serial1.println(F("CC3000 not initialized; can't get information."));
+    lSer.println(F("CC3000 not initialized; can't get information."));
     return;
   }
 
-  Serial1.println(F("CC3000 information:"));
+  lSer.println(F("CC3000 information:"));
 
   netapp_ipconfig(&inf);
 
-  Serial1.print(F("  IP address: "));
+  lSer.print(F("  IP address: "));
   PrintIPBytes(inf.aucIP);
 
-  Serial1.print(F("  Subnet mask: "));
+  lSer.print(F("  Subnet mask: "));
   PrintIPBytes(inf.aucSubnetMask);
 
-  Serial1.print(F("  Gateway: "));
+  lSer.print(F("  Gateway: "));
   PrintIPBytes(inf.aucDefaultGateway);
 
-  Serial1.print(F("  DHCP server: "));
+  lSer.print(F("  DHCP server: "));
   PrintIPBytes(inf.aucDHCPServer);
 
-  Serial1.print(F("  DNS server: "));
+  lSer.print(F("  DNS server: "));
   PrintIPBytes(inf.aucDNSServer);
 
-  Serial1.print(F("  MAC address: "));
+  lSer.print(F("  MAC address: "));
   for (int i = (MAC_ADDR_LEN - 1); i >= 0; i--) {
     if (i != (MAC_ADDR_LEN - 1)) {
-      Serial1.print(F(":"));
+      lSer.print(F(":"));
     }
-    Serial1.print(inf.uaMacAddr[i], HEX);
+    lSer.print(inf.uaMacAddr[i], HEX);
   }
-  Serial1.println();
+  lSer.println();
 
   memset(localB, 0, 32);
   memcpy(localB, inf.uaSSID, 32);
 
-  Serial1.print(F("  Connected to SSID: "));
-  Serial1.println(localB);
+  lSer.print(F("  Connected to SSID: "));
+  lSer.println(localB);
 }
 
