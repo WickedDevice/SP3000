@@ -27,6 +27,37 @@
 #include "settings.hpp"
 
 /*
+ * The following pin definitions define to what Arduino pin you have connected
+ * each shield pin function to.
+ *
+ * There are some product specific limitations that need to be observed:
+ *
+ * Guidelines for the Sweet Pea WiFi Shield (SP3001)
+ *  The Wifi shield is compatible with all Rev3 Arduino boards and have some
+ *  configuration options for the interrupt pin as well as the enable and
+ *  chip select pin. Please check the data sheet to see what options are
+ *  available to you.
+ *
+ * Guidelines for Sweet Pea LeoFi (SP3011)
+ *   The LeoFi is a Leonardo compatible CPU board with the CC3000 chip mounted
+ *   on it. The LeoFi has a ficed configuration which can not be changed (unless
+ *   you bring out your hardware hacking skillz). For the LeoFi The
+ *   CC3000_init must be called like this: CC3000_Init (0, 6, 5, 7, 3)
+ *
+ */
+
+extern uint8_t WLAN_CS;          // Arduino pin connected to CC3000 WLAN_SPI_CS
+extern uint8_t WLAN_EN;          // Arduino pin connected to CC3000 VBAT_SW_EN
+extern uint8_t WLAN_IRQ;         // Arduino pin connected to CC3000 WLAN_SPI_IRQ
+extern uint8_t WLAN_IRQ_INTNUM;  // The attachInterrupt() number that corresponds
+                                  // to WLAN_IRQ
+
+extern void CC3000_Init(byte mode,
+                         uint8_t WLAN_CS,
+                         uint8_t WLAN_EN,
+                         uint8_t WLAN_IRQ,
+                         uint8_t WLAN_IRQ__NUM);
+/*
  * Differently from the original author of these files we decided to include
  * the digitalFastWrite header file with this library. At least until the
  * Arduino framework actually supports this feature properly.
@@ -56,7 +87,6 @@ extern volatile unsigned long OkToDoShutDown;
 extern volatile unsigned long ulCC3000DHCP_configured;
 
 extern volatile unsigned char ucStopSmartConfig;
-extern void CC3000_Init(byte);
 
 /* Function Prototypes */
 inline long ReadWlanInterruptPin(void);

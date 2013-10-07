@@ -56,6 +56,14 @@ byte dhcpIPAddress[4];
 
 enum interrupt_state wlan_int_status;
 
+uint8_t WLAN_CS;          // Arduino pin connected to CC3000 WLAN_SPI_CS
+uint8_t WLAN_EN;          // Arduino pin connected to CC3000 VBAT_SW_EN
+uint8_t WLAN_IRQ;         // Arduino pin connected to CC3000 WLAN_SPI_IRQ
+uint8_t WLAN_IRQ_INTNUM;  // The attachInterrupt() number that corresponds
+                          // to WLAN_IRQ
+uint8_t SD_CARD_CS;       // Pin connected to the CS signal of the SD Card
+uint8_t SRAM_CS;          // Pin connected to the CS signal of the SRAM
+
 /*-------------------------------------------------------------------
 
     The TI library calls this routine when asynchronous events happen.
@@ -224,8 +232,20 @@ void WlanInterruptDisable(void)
     to indicate we're not sending any patches.
     
  --------------------------------------------------------------------*/
-void CC3000_Init(byte startReqest)
+void CC3000_Init(byte startReqest,
+                 uint8_t cs_pin,
+                 uint8_t en_pin,
+                 uint8_t irq_pin,
+                 uint8_t irq_num)
 {
+  /*
+   * Initialize pins used
+   */
+  WLAN_CS = cs_pin;
+  WLAN_EN = en_pin;
+  WLAN_IRQ = irq_pin;
+  WLAN_IRQ_INTNUM = irq_num;
+
 	/*
 	* Initialize the PCA9536
 	*/
