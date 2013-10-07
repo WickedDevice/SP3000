@@ -79,7 +79,7 @@ char process_jobs (void)
         break;
 
       case JOB_DELAYED_CLR:
-
+        break;
     }
   }
 }
