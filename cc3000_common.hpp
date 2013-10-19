@@ -95,8 +95,8 @@ extern "C" {
   returned to 99 bytes only.
   The 1 is used for the overrun detection 
 */
-#define MAX_BUF   543
-#define CC3000_MINIMAL_RX_SIZE      (118+1)
+#define MAX_BUF   1536
+#define CC3000_MINIMAL_RX_SIZE      (135+1)
 #define CC3000_MAXIMAL_RX_SIZE      (MAX_BUF + 1)
 
 /*Defines for minimal and maximal TX buffer size.
@@ -118,7 +118,7 @@ extern "C" {
  
   The 1 is used for the overrun detection */ 
 
-#define   CC3000_MINIMAL_TX_SIZE      (118 + 1)
+#define   CC3000_MINIMAL_TX_SIZE      (135 + 1)
 #define   CC3000_MAXIMAL_TX_SIZE      (MAX_BUF + 1)
 
 //TX and RX buffer sizes - allow to receive and transmit maximum data at lengh 8.

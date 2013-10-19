@@ -17,12 +17,22 @@
                             (uint32_t)((uint32_t)b << 16) | \
                             (uint32_t)((uint32_t)c << 8) | (uint32_t)d)
 
+struct SenseData_s {
+  unsigned long feed_id;
+  char* value;
+};
+typedef struct SenseData_s SenseData;
+
 //
 // Function prototypes
 //
 int32_t sp_connect (uint32_t destIP, uint16_t destPort, uint32_t type);
-size_t send_F(uint32_t s, const __FlashStringHelper *string);
+size_t send_F (uint32_t s, const __FlashStringHelper *string);
+size_t send_l (uint32_t s, long value);
+size_t send_c (uint32_t s, char *str);
 uint8_t data_available(int16_t s);
 uint8_t read_data(int16_t s);
+void scan_ssid(uint32_t time);
+char do_smart_config(void);
 
 #endif /* SOCKET_SUPPORT_HPP_ */

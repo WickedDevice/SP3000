@@ -59,6 +59,9 @@ typedef struct {
 
 tSpiInformation sSpiInformation;
 
+static volatile char wlan_is_in_irq = 0;
+static volatile char missed_irq = 0;
+
 //
 // Static buffer for 5 bytes of SPI HEADER
 //
@@ -73,6 +76,27 @@ unsigned char tSpiReadHeader[] = { READ, 0, 0, 0, 0 };
 char spi_buffer[CC3000_RX_BUFFER_SIZE];
 unsigned char wlan_tx_buffer[CC3000_TX_BUFFER_SIZE];
 
+
+void check_missed_irq(void)
+{
+  if ((digitalRead(WLAN_IRQ) == LOW) &&
+       (wlan_is_in_irq == 0) &&
+       (wlan_int_status != INT_DISABLED)) {
+    missed_irq = 0;
+    Serial1.write('0'+missed_irq);
+    CC3000InterruptHandler();
+  }
+#if 0
+  if (missed_irq) {
+    // Indicate we found a missing irq and how many
+    Serial1.write('0'+missed_irq);
+    missed_irq = 0;
+    interrupts();
+    CC3000InterruptHandler();
+    return;
+  }
+#endif
+}
 //*****************************************************************************
 //
 //!
@@ -87,8 +111,11 @@ unsigned char wlan_tx_buffer[CC3000_TX_BUFFER_SIZE];
 
 void SpiPauseSpi(void)
 {
+  noInterrupts();
   wlan_int_status = INT_DISABLED;
-  detachInterrupt(WLAN_IRQ_INTNUM);
+  interrupts();
+  Serial1.write('P');
+//  detachInterrupt(WLAN_IRQ_INTNUM);
 }
 
 //*****************************************************************************
@@ -105,8 +132,17 @@ void SpiPauseSpi(void)
 
 void SpiResumeSpi(void)
 {
+  noInterrupts();
   wlan_int_status = INT_ENABLED;
-  attachInterrupt(WLAN_IRQ_INTNUM, CC3000InterruptHandler, FALLING);
+  interrupts();
+  Serial1.write('R');
+  if (missed_irq) {
+    Serial1.write('0'+missed_irq);
+    missed_irq = 0;
+    CC3000InterruptHandler();
+    return;
+  }
+  //  attachInterrupt(WLAN_IRQ_INTNUM, CC3000InterruptHandler, FALLING);
 }
 
 //*****************************************************************************
@@ -125,7 +161,9 @@ void SpiTriggerRxProcessing(void)
   //
   // Trigger Rx processing
   //
+  Serial1.write('<');
   SpiPauseSpi();
+  Serial1.write('>');
   negate_cs();
 
   // The magic number that resides at the end of the TX/RX buffer (1 byte after the allocated size)
@@ -436,32 +474,29 @@ void SpiReadHeader(void)
 //*****************************************************************************
 void CC3000InterruptHandler(void)
 {
-
-  if (sSpiInformation.ulSpiState == eSPI_STATE_POWERUP) {
-    /* This means IRQ line was low call a callback of HCI Layer to inform on event */
-    sSpiInformation.ulSpiState = eSPI_STATE_INITIALIZED;
-  } else if (sSpiInformation.ulSpiState == eSPI_STATE_IDLE) {
-    sSpiInformation.ulSpiState = eSPI_STATE_READ_IRQ;
-
-    /* IRQ line goes down - start reception */
-    assert_cs();
-
-    //
-    // Wait for TX/RX Compete which will come as DMA interrupt
-    //
-    SpiReadHeader();
-
-    sSpiInformation.ulSpiState = eSPI_STATE_READ_EOT;
-
-    SSIContReadOperation();
-  } else if (sSpiInformation.ulSpiState == eSPI_STATE_WRITE_IRQ) {
-
-    SpiWriteDataSynchronous(sSpiInformation.pTxPacket,
-        sSpiInformation.usTxPacketLength);
-    sSpiInformation.ulSpiState = eSPI_STATE_IDLE;
-
-    negate_cs();
+  wlan_is_in_irq = 1;
+  if (wlan_int_status == INT_ENABLED) {
+    if (sSpiInformation.ulSpiState == eSPI_STATE_POWERUP) {
+      /* This means IRQ line was low call a callback of HCI Layer to inform on event */
+      sSpiInformation.ulSpiState = eSPI_STATE_INITIALIZED;
+    } else if (sSpiInformation.ulSpiState == eSPI_STATE_IDLE) {
+      sSpiInformation.ulSpiState = eSPI_STATE_READ_IRQ;
+      /* IRQ line goes down - start reception */
+      assert_cs();
+      SpiReadHeader();
+      sSpiInformation.ulSpiState = eSPI_STATE_READ_EOT;
+      SSIContReadOperation();
+    } else if (sSpiInformation.ulSpiState == eSPI_STATE_WRITE_IRQ) {
+      SpiWriteDataSynchronous(sSpiInformation.pTxPacket,
+          sSpiInformation.usTxPacketLength);
+      sSpiInformation.ulSpiState = eSPI_STATE_IDLE;
+      negate_cs();
+    }
+  } else {
+    missed_irq++;
+    UDR1='?';
   }
+  wlan_is_in_irq = 0;
 }
 
 //*****************************************************************************
@@ -544,15 +579,11 @@ int SpiInit(void)
   pinMode(WLAN_IRQ, INPUT);
   digitalWrite(WLAN_IRQ, HIGH); /* Use a weak pullup */
 
-//  SpiConfigStoreOld(); // prime ccspi_old* values for DEASSERT
-
   /* Initialise SPI */
   SPI.begin();
   SPI.setDataMode(SPI_MODE1);
   SPI.setBitOrder(MSBFIRST);
-  SPI.setClockDivider(SPI_CLOCK_DIV2);
-
-//  SpiConfigStoreMy(); // prime ccspi_my* values for ASSERT
+  SPI.setClockDivider(SPI_CLOCK_DIV4);
 
   negate_cs();
 

@@ -42,6 +42,7 @@
 //******************************************************************************
 //                  INCLUDE FILES
 //******************************************************************************
+#include <Arduino.h>
 
 #include "cc3000_common.hpp"
 #include "string.h"
@@ -235,18 +236,23 @@ hci_event_handler(void *pRetParams, unsigned char *from, unsigned char *fromlen)
   unsigned char * RecvParams;
   unsigned char *RetParams;
 	
-	
+  Serial1.write ('[');
+
 	while (1)
 	{
+	  check_missed_irq();
+
 		if (tSLInformation.usEventOrDataReceived != 0)
 		{				
+
 			pucReceivedData = (tSLInformation.pucReceivedData);
 
 			if (*pucReceivedData == HCI_TYPE_EVNT)
 			{
 				// Event Received
-				STREAM_TO_UINT16((char *)pucReceivedData, HCI_EVENT_OPCODE_OFFSET,
-												 usReceivedEventOpcode);
+				STREAM_TO_UINT16((char *)pucReceivedData,
+							     HCI_EVENT_OPCODE_OFFSET,
+								 usReceivedEventOpcode);
 				pucReceivedParams = pucReceivedData + HCI_EVENT_HEADER_SIZE;		
 				RecvParams = pucReceivedParams;
 				RetParams = (unsigned char *)pRetParams;
@@ -474,11 +480,13 @@ hci_event_handler(void *pRetParams, unsigned char *from, unsigned char *fromlen)
 			
 			if ((tSLInformation.usRxEventOpcode == 0) && (tSLInformation.usRxDataPending == 0))
 			{
-				return NULL;
+        Serial1.write ('0');
+				Serial1.write (']');
+			  return NULL;
 			}	
 		}
 	}
-
+	Serial1.write (']');
 }
 
 //*****************************************************************************
