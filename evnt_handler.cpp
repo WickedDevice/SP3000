@@ -44,6 +44,8 @@
 //******************************************************************************
 #include <Arduino.h>
 
+#define DEBUG
+#include "debug.hpp"
 #include "cc3000_common.hpp"
 #include "string.h"
 #include "hci.hpp"
@@ -223,8 +225,6 @@ void hci_unsol_handle_patch_request(char *event_hdr)
 //!                  event handler from global array of handlers pointers
 //
 //*****************************************************************************
-
-	
 unsigned char *
 hci_event_handler(void *pRetParams, unsigned char *from, unsigned char *fromlen)
 {
@@ -236,12 +236,8 @@ hci_event_handler(void *pRetParams, unsigned char *from, unsigned char *fromlen)
   unsigned char * RecvParams;
   unsigned char *RetParams;
 	
-  Serial1.write ('[');
-
 	while (1)
 	{
-	  check_missed_irq();
-
 		if (tSLInformation.usEventOrDataReceived != 0)
 		{				
 
@@ -354,6 +350,7 @@ hci_event_handler(void *pRetParams, unsigned char *from, unsigned char *fromlen)
 							STREAM_TO_UINT32((char *)pucReceivedParams,SL_RECEIVE_NUM_BYTES_OFFSET,*(unsigned long *)pRetParams);
 							pRetParams = ((char *)pRetParams) + 4;
 							STREAM_TO_UINT32((char *)pucReceivedParams,SL_RECEIVE__FLAGS__OFFSET,*(unsigned long *)pRetParams);							
+							// TODO: Check this against the original code
 							tBsdReadReturnParams *tread = (tBsdReadReturnParams *)pRetParams;
 							if(((tBsdReadReturnParams *)pRetParams)->iNumberOfBytes == ERROR_SOCKET_INACTIVE)
 							{
@@ -480,13 +477,10 @@ hci_event_handler(void *pRetParams, unsigned char *from, unsigned char *fromlen)
 			
 			if ((tSLInformation.usRxEventOpcode == 0) && (tSLInformation.usRxDataPending == 0))
 			{
-        Serial1.write ('0');
-				Serial1.write (']');
 			  return NULL;
 			}	
 		}
 	}
-	Serial1.write (']');
 }
 
 //*****************************************************************************
@@ -509,8 +503,8 @@ hci_unsol_event_handler(char *event_hdr)
 	unsigned long NumberOfReleasedPackets;
 	unsigned long NumberOfSentPackets;
 	
-	STREAM_TO_UINT16(event_hdr, HCI_EVENT_OPCODE_OFFSET,event_type);
-	
+	STREAM_TO_UINT16(event_hdr, HCI_EVENT_OPCODE_OFFSET, event_type);
+
 	if (event_type & HCI_EVNT_UNSOL_BASE)
 	{
 		switch(event_type)
@@ -529,9 +523,8 @@ hci_unsol_event_handler(char *event_hdr)
 					{
 						tSLInformation.sWlanCB(HCI_EVENT_CC3000_CAN_SHUT_DOWN, NULL, 0);
 					}
-				}				
+				}
 				return 1;
-				
 			}
 		}
 	}
@@ -632,7 +625,11 @@ hci_unsol_event_handler(char *event_hdr)
                 pArg = M_BSD_RESP_PARAMS_OFFSET(event_hdr);
                 STREAM_TO_UINT32(pArg, BSD_RSP_PARAMS_STATUS_OFFSET,status);
                 
-                if (ERROR_SOCKET_INACTIVE == status)
+
+                // TODO: Temporary fix until TI can confirm what the problem
+                // really is.
+//                if (ERROR_SOCKET_INACTIVE == status || -1 == status)
+                if (0 > status)
                 {
                     // The only synchronous event that can come from SL device in form of 
                     // command complete is "Command Complete" on data sent, in case SL device 
@@ -642,10 +639,16 @@ hci_unsol_event_handler(char *event_hdr)
                     
                     return (1);
                 }
-                else
+                else {
                     return (0);
+                }
 	}
 	
+	//handle a case where unsolicited event arrived, but was not handled by any of the cases above
+	if ((event_type != tSLInformation.usRxEventOpcode) && (event_type != HCI_EVNT_PATCHES_REQ))	{
+	  return(1);
+	}
+
 	return(0);
 }
 
@@ -672,16 +675,13 @@ hci_unsolicited_event_handler(void)
 		pucReceivedData = (tSLInformation.pucReceivedData);
 		
 		if (*pucReceivedData == HCI_TYPE_EVNT)
-		{			
-			
+		{
 			// In case unsolicited event received - here the handling finished
 			if (hci_unsol_event_handler((char *)pucReceivedData) == 1)
 			{
-				
 				// There was an unsolicited event received - we can release the buffer
 				// and clean the event received 
 				tSLInformation.usEventOrDataReceived = 0;
-				
 				res = 1;
 				SpiResumeSpi();
 			}

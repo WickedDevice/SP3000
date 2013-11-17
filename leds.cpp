@@ -4,8 +4,13 @@
  *  Created on: 22 sep 2013
  *      Author: pontus
  */
+
+
 #include <Arduino.h>
 #include <Wire.h>
+#include "settings.hpp"
+
+#ifndef SP_DISABLE_LEDS
 #include "pca9536.hpp"
 #include "leds.hpp"
 
@@ -23,6 +28,7 @@ void setled (uint8_t led, uint8_t value)
 
 void initled (void)
 {
+  Wire.begin();
   // Make all IO pins outputs
   Wire.beginTransmission(PCA9536_BASE_ADDRESS);
   Wire.write(PCA9536_REG_CTR);
@@ -41,3 +47,5 @@ void initled (void)
   Wire.write(0xff);
   Wire.endTransmission();
 }
+
+#endif // SP_DISABLE_LEDS

@@ -54,8 +54,6 @@ byte asyncNotificationWaiting=false;
 long lastAsyncEvent;
 byte dhcpIPAddress[4];
 
-enum interrupt_state wlan_int_status;
-
 uint8_t WLAN_CS;          // Arduino pin connected to CC3000 WLAN_SPI_CS
 uint8_t WLAN_EN;          // Arduino pin connected to CC3000 VBAT_SW_EN
 uint8_t WLAN_IRQ;         // Arduino pin connected to CC3000 WLAN_SPI_IRQ
@@ -212,14 +210,12 @@ inline void WriteWlanEnablePin(unsigned char val)
  --------------------------------------------------------------------*/
 void WlanInterruptEnable(void) 
 {
-  wlan_int_status = INT_ENABLED;
   attachInterrupt(WLAN_IRQ_INTNUM, CC3000InterruptHandler, FALLING);
 }
 
 
 void WlanInterruptDisable(void) 
 {
-  wlan_int_status = INT_DISABLED;
   detachInterrupt(WLAN_IRQ_INTNUM);
 }
 
@@ -246,11 +242,12 @@ void CC3000_Init(byte startReqest,
   WLAN_IRQ = irq_pin;
   WLAN_IRQ_INTNUM = irq_num;
 
-	/*
-	* Initialize the PCA9536
-	*/
-	Wire.begin();
+  // Initialize the SPI library
+  SpiInit();
 
+  /*
+  * Initialize the PCA9536
+  */
 	initled();
 	/* 
 	 * Set the initial state of the output pins before
@@ -259,7 +256,6 @@ void CC3000_Init(byte startReqest,
 	 * resistors on the signals pulling them to their
 	 * inactive state.
 	 */
-	digitalWriteFast (WLAN_EN, LOW);	// make sure it's off until we're ready
 	negate_cs();	// turn off CS until we're ready
 
 	/* Set the modes for the control pins */
@@ -267,12 +263,10 @@ void CC3000_Init(byte startReqest,
 	pinMode(WLAN_EN, OUTPUT);
 	pinMode(WLAN_CS, OUTPUT);
 
-	wlan_int_status = INT_DISABLED;
-
-	setled(LED_CON | LED_ACT | LED_ERR | LED_AUX, LED_ON);
+	setled (LED_CON | LED_ACT | LED_ERR | LED_AUX, LED_ON);
 	delay (100);
-	setled(LED_CON | LED_ACT | LED_ERR | LED_AUX, LED_OFF);
-		
+	setled (LED_CON | LED_ACT | LED_ERR | LED_AUX, LED_OFF);
+
 	wlan_init( CC3000_AsyncCallback,
 		SendFirmwarePatch,
 		SendDriverPatch,

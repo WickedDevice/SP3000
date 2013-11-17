@@ -6,17 +6,8 @@
  */
 
 #include "sp3000.h"
+#include "debug.hpp"
 #include "spi.hpp"
-
-// Enable the DEBUG macro to get debug prints
-//#define DEBUG
-#ifdef DEBUG
-#define PRINT(x) Serial1.print(x)
-#define PRINT_LN(x) Serial1.println(x)
-#else
-#define PRINT(x)
-#define PRINT_LN(x)
-#endif
 
 uint8_t txbuf[BUFFER_SIZE];
 uint8_t rxbuf[BUFFER_SIZE];
@@ -48,7 +39,7 @@ void dbgIP (uint32_t IP)
   sprintf (buff, "%d.%d.%d.%d",
       (unsigned char)(IP >> 24), (unsigned char)(IP >> 16) & 0xff,
       (unsigned char)(IP >> 8) & 0xff, (unsigned char)IP & 0xff);
-  Serial1.print (buff);
+  lSer.print (buff);
 }
 #endif
 
@@ -60,20 +51,23 @@ void dbgIP (uint32_t IP)
 //*   associated with the connection and if it fails it simply returns 0.
 //*
 //*****************************************************************************
-int32_t sp_connect(uint32_t destIP, uint16_t destPort, uint32_t type)
+int sp_connect(uint32_t destIP, uint16_t destPort, uint32_t type)
 {
   sockaddr socketAddress;
   uint32_t sock;
 
+  buf_siz = 0;
+  rx_ptr = 0;
+
   if (type != IPPROTO_TCP && type != IPPROTO_UDP) {
-    PRINT_LN (F("Invalid socket type !"));
+    PRINTLN (F("Invalid socket type !"));
     return -1;
   }
   // Create a socket for the connection
-  PRINT_LN (F("Creating socket !"));
+  PRINTLN (F("Creating socket !"));
   sock = socket(AF_INET, SOCK_STREAM, type);
   if (sock < 0) {
-    PRINT_LN(F("Failed to open socket"));
+    PRINTLN(F("Failed to open socket"));
     return sock;
   }
 
@@ -91,31 +85,31 @@ int32_t sp_connect(uint32_t destIP, uint16_t destPort, uint32_t type)
   PRINT(F("Trying to connect to "));
   dbgIP (destIP);
   PRINT(':');
-  PRINT_LN(destPort);
+  PRINTLN(destPort);
 #endif
 
-  PRINT_LN (F("Connecting socket."));
+  PRINTLN (F("Connecting socket."));
   if (-1 == connect(sock, &socketAddress, sizeof(socketAddress))) {
-    PRINT_LN(F("Connection error"));
+    PRINTLN(F("Connection error"));
     closesocket(sock);
     return -1;
-  } PRINT_LN (F("Successfully connected !"));
+  } PRINTLN (F("Successfully connected !"));
   return sock;
 }
 
-#define PRE_SEND_DELAY 50
 //*****************************************************************************
 //*
 //* Description:
 //*   Sends the content of the supplied string
 //*
 //*****************************************************************************
-size_t send_c(uint32_t s, char *str)
+int sp_send (uint32_t s, char *str)
 {
   uint8_t i = 0;
   size_t n = 0;
+  int ret;
 
-  PRINT_LN (F("Entered send_c"));
+  PRINTLN (F("Entered send_c"));
   while (1) {
     if (!str[i])
       break;
@@ -127,13 +121,10 @@ size_t send_c(uint32_t s, char *str)
       i = 0;
     }
   }
+  if (0 > (ret = send(s, txbuf, i, 0))) return ret;
+  n += ret;
 
-#if PRE_SEND_DELAY
-  delay(PRE_SEND_DELAY);
-#endif
-  n += send(s, txbuf, i, 0);
-
-  PRINT_LN (F("Leaving send_c"));
+  PRINTLN (F("Leaving send_c"));
   return n;
 }
 
@@ -143,21 +134,20 @@ size_t send_c(uint32_t s, char *str)
 //*   Sends the content of the supplied long int over a socket
 //*
 //*****************************************************************************
-size_t send_l(uint32_t s, long value)
+int sp_send (uint32_t s, long value)
 {
   uint8_t i = 0;
   size_t n = 0;
+  int ret
 
-  PRINT_LN (F("Entered send_l"));
+  PRINTLN (F("Entered send_l"));
   ltoa (value, (char *)txbuf, 10);
   i = strlen((char*)txbuf);
 
-#if PRE_SEND_DELAY
-  delay(PRE_SEND_DELAY);
-#endif
   txbuf[i] = 0;
-  n += send(s, txbuf, i, 0);
-  PRINT_LN (F("Leaving send_l"));
+  if (0 > (ret = send(s, txbuf, i, 0))) return ret;
+  n += ret;
+  PRINTLN (F("Leaving send_l"));
   return n;
 }
 
@@ -167,13 +157,13 @@ size_t send_l(uint32_t s, long value)
 //*   Sends the content of a PROGMEM string over a socket.
 //*
 //*****************************************************************************
-size_t send_F(uint32_t s, const __FlashStringHelper *string)
+int sp_send (uint32_t s, const __FlashStringHelper *string)
 {
   uint8_t i = 0;
   size_t n = 0;
   int ret;
 
-  PRINT_LN (F("Entered send_F"));
+  PRINTLN (F("Entered send_F"));
 
   const char PROGMEM *p = (const char PROGMEM *) string;
   while (1) {
@@ -182,19 +172,40 @@ size_t send_F(uint32_t s, const __FlashStringHelper *string)
       break;
     txbuf[i++] = c;
     if (i >= BUFFER_SIZE) {
-      n += send (s, txbuf, BUFFER_SIZE, 0);
+      if (0 > (ret = send (s, txbuf, BUFFER_SIZE, 0))) return ret;
+      n += ret;
       i = 0;
     }
   }
-#if PRE_SEND_DELAY
-  delay(PRE_SEND_DELAY);
-#endif
-  if ((ret = send(s, txbuf, i, 0)) < 0)
-    return ret;
+  if ((ret = send(s, txbuf, i, 0)) < 0) return ret;
   n += ret;
 
-  PRINT_LN (F("Leaving send_F"));
+  PRINTLN (F("Leaving send_F"));
   return n;
+}
+
+//*****************************************************************************
+//*
+//* Description:
+//*   Peeks at the data from an incoming socket stream
+//*
+//*****************************************************************************
+uint8_t sp_peek(int16_t s)
+{
+  PRINTLN (F("Entered sp_peek"));
+
+  while ((buf_siz <= 0) || (buf_siz == rx_ptr)) {
+    buf_siz = recv(s, rxbuf, sizeof(rxbuf), 0);
+    if (buf_siz == -57) {
+      closesocket(s);
+      lSer.println (F("Oops, nasty things happen"));
+      return 0;
+    }
+    rx_ptr = 0;
+  }
+
+  PRINTLN (F("Leaving sp_peek"));
+  return rxbuf[rx_ptr];
 }
 
 //*****************************************************************************
@@ -203,23 +214,16 @@ size_t send_F(uint32_t s, const __FlashStringHelper *string)
 //*   Reads data from an incoming socket stream
 //*
 //*****************************************************************************
-uint8_t read_data(int16_t s)
+uint8_t sp_read(int16_t s)
 {
-  PRINT_LN (F("Entered read_data"));
+  uint8_t c;
 
-  while ((buf_siz <= 0) || (buf_siz == rx_ptr)) {
-    check_missed_irq();
-    buf_siz = recv(s, rxbuf, sizeof(rxbuf), 0);
-    if (buf_siz == -57) {
-      closesocket(s);
-      Serial1.println (F("Oops, nasty things happen"));
-      return 0;
-    }
-    rx_ptr = 0;
-  }
+  PRINTLN (F("Entered sp_read"));
+  c = sp_peek(s);
+  rx_ptr++;
 
-  PRINT_LN (F("Leaving read_data"));
-  return rxbuf[rx_ptr++];
+  PRINTLN (F("Leaving sp_read"));
+  return c;
 }
 
 //*****************************************************************************
@@ -228,16 +232,16 @@ uint8_t read_data(int16_t s)
 //*   Checks if there is data available in the supplied socket stream
 //*
 //*****************************************************************************
-uint8_t data_available(int16_t s)
+uint8_t data_available(int16_t s,  uint16_t time)
 {
   timeval timeout;
   fd_set fd_read;
 
-  PRINT_LN (F("Entered data_available"));
+  PRINTLN (F("Entered data_available"));
 
   // Make sure the bloody socket is open
   if (s < 0) {
-    PRINT_LN(F("Socket is closed."));
+    PRINTLN(F("Socket is closed."));
     return 0;
   }
 
@@ -249,12 +253,22 @@ uint8_t data_available(int16_t s)
   memset(&fd_read, 0, sizeof(fd_read));
   FD_SET(s, &fd_read);
 
-  timeout.tv_sec = 0;
-  timeout.tv_usec = 500000; // 500 millisec, My Raspberry Pi based test system
-                            // takes a while to reply.
+  timeout.tv_sec = time;
+  timeout.tv_usec = 0;
 
-  PRINT_LN (F("Leaving data_available"));
+  PRINTLN (F("Leaving data_available"));
   return ((select(s + 1, &fd_read, NULL, NULL, &timeout) == 1) ? 1 : 0);
+}
+
+//*****************************************************************************
+//*
+//* Description:
+//*   Checks if there is data available in the supplied socket stream
+//*
+//*****************************************************************************
+uint8_t data_available(int16_t s)
+{
+  return data_available (s, 1);
 }
 
 //*****************************************************************************
@@ -269,12 +283,12 @@ void scan_ssid(uint32_t time)
   const unsigned long intervalTime[16] = { 2000, 2000, 2000, 2000, 2000, 2000,
       2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000 };
 
-  PRINT_LN (F("Entered scanSSIDs"));
+  PRINTLN (F("Entered scanSSIDs"));
 
   wlan_ioctl_set_scan_params(time, 20, 100, 5, 0x7FF, -120, 0, 300,
       (unsigned long *) &intervalTime);
 
-  PRINT_LN (F("Leaving scanSSIDs"));
+  PRINTLN (F("Leaving scanSSIDs"));
 }
 #endif
 
@@ -289,33 +303,33 @@ char do_smart_config(void)
   long rval;
   long timeoutCounter;
 
-  PRINT_LN (F("Entered do_smart_config"));
+  PRINTLN (F("Entered do_smart_config"));
 
-  PRINT_LN (F("Disabling auto-connect policy."));
+  PRINTLN (F("Disabling auto-connect policy."));
   if ((rval = wlan_ioctl_set_connection_policy(0, 0, 0)) != 0) {
-    PRINT (F("Setting auto connection policy failed, error: ")); PRINT_LN (rval);
+    PRINT (F("Setting auto connection policy failed, error: ")); PRINTLN (rval);
     return -1;
   }
 
-  PRINT_LN (F("Deleting all existing profiles."));
+  PRINTLN (F("Deleting all existing profiles."));
   if ((rval = wlan_ioctl_del_profile(255)) != 0) {
-    PRINT (F("Deleting all profiles failed, error: ")); PRINT_LN (rval);
+    PRINT (F("Deleting all profiles failed, error: ")); PRINTLN (rval);
     return -1;
   }
 
-  PRINT_LN (F("Waiting until disconnected..."));
+  PRINTLN (F("Waiting until disconnected..."));
   while (ulCC3000Connected == 1)
     ;
 
-  PRINT_LN (F("Setting smart config prefix."));
+  PRINTLN (F("Setting smart config prefix."));
   if ((rval = wlan_smart_config_set_prefix(simpleConfigPrefix)) != 0) {
-    PRINT (F("Setting smart config prefix failed, error: ")); PRINT_LN (rval);
+    PRINT (F("Setting smart config prefix failed, error: ")); PRINTLN (rval);
     return -1;
   }
 
-  PRINT_LN (F("Starting smart config !"));
+  PRINTLN (F("Starting smart config !"));
   if ((rval = wlan_smart_config_start(0)) != 0) {
-    PRINT (F("Starting smart config failed, error: ")); PRINT_LN (rval);
+    PRINT (F("Starting smart config failed, error: ")); PRINTLN (rval);
     return -1;
   }
 
@@ -324,42 +338,62 @@ char do_smart_config(void)
   timeoutCounter = millis();
   while (ulSmartConfigFinished == 0) {
     if (millis() - timeoutCounter > 30000) {
-      PRINT_LN (F("Timed out waiting for Smart Config to finish!"));
+      PRINTLN (F("Timed out waiting for Smart Config to finish!"));
       return -1;
     }
   }
 
-  PRINT_LN (F("Enabling auto-connect policy..."));
+  PRINTLN (F("Enabling auto-connect policy..."));
   if ((rval = wlan_ioctl_set_connection_policy(DISABLE, DISABLE, ENABLE))
       != 0) {
-    PRINT (F("Setting auto connection policy failed, error: ")); PRINT_LN (rval);
+    PRINT (F("Setting auto connection policy failed, error: ")); PRINTLN (rval);
     return -1;
   }
 
-  PRINT_LN (F("Stopping CC3000..."));
+  PRINTLN (F("Stopping CC3000..."));
   wlan_stop();  // no error returned here, so nothing to check
 
-  PRINT_LN (F("Pausing for 2 seconds..."));
+  PRINTLN (F("Pausing for 2 seconds..."));
   delay(2000);
 
-  PRINT_LN (F("Restarting CC3000... "));
+  PRINTLN (F("Restarting CC3000... "));
   wlan_start(0);  // no error returned here, so nothing to check
 
-  PRINT_LN (F("Waiting for connection to AP..."));
+  PRINTLN (F("Waiting for connection to AP..."));
   while (ulCC3000Connected != 1)
     ;
 
-  PRINT_LN (F("Waiting for IP address from DHCP..."));
+  PRINTLN (F("Waiting for IP address from DHCP..."));
   while (ulCC3000DHCP != 1)
     ;
 
-  PRINT_LN (F("Sending mDNS broadcast to signal we're done with Smart Config..."));
+  PRINTLN (F("Sending mDNS broadcast to signal we're done with Smart Config..."));
   mdnsAdvertiser(1, device_name, strlen(device_name));
   // The API documentation says mdnsAdvertiser()
   // is supposed to return 0 on success and SOC_ERROR on failure, but it looks like
   // what it actually returns is the socket number it used. So we ignore it.
 
-  PRINT_LN (F("Smart Config finished!"));
+  PRINTLN (F("Smart Config finished!"));
 
   return 0;
+}
+
+void sp_set_connection_policy (byte policy)
+{
+  byte open_ap = 0;
+  byte fast_connect = 0;
+  byte use_profiles = 0;
+
+  PRINT ("Connection policy: ");
+  PRINTLN (policy);
+
+  if (policy & SP_CONNECT_TO_OPEN_AP)
+    open_ap = 1;
+  if (policy & SP_FAST_CONNECT)
+    fast_connect = 1;
+  if (policy & SP_AUTO_START)
+    use_profiles = 1;
+
+  wlan_ioctl_set_connection_policy  ((uint32_t)open_ap,
+      (uint32_t)fast_connect, (uint32_t)use_profiles);
 }

@@ -95,9 +95,8 @@ extern "C" {
   returned to 99 bytes only.
   The 1 is used for the overrun detection 
 */
-#define MAX_BUF   1536
 #define CC3000_MINIMAL_RX_SIZE      (135+1)
-#define CC3000_MAXIMAL_RX_SIZE      (MAX_BUF + 1)
+#define CC3000_MAXIMAL_RX_SIZE      (1500 + 1)
 
 /*Defines for minimal and maximal TX buffer size.
   This buffer is used for sending events and data.
@@ -119,7 +118,7 @@ extern "C" {
   The 1 is used for the overrun detection */ 
 
 #define   CC3000_MINIMAL_TX_SIZE      (135 + 1)
-#define   CC3000_MAXIMAL_TX_SIZE      (MAX_BUF + 1)
+#define   CC3000_MAXIMAL_TX_SIZE      (1500 + 1)
 
 //TX and RX buffer sizes - allow to receive and transmit maximum data at lengh 8.
 #ifdef CC3000_TINY_DRIVER
@@ -137,15 +136,20 @@ extern "C" {
 */
   
 #ifndef CC3000_TINY_DRIVER
+#ifdef OVERRIDE_BUFFER_SIZE
+  #define CC3000_RX_BUFFER_SIZE   (OVERRIDE_BUFFER_SIZE)
+  #define CC3000_TX_BUFFER_SIZE   (OVERRIDE_BUFFER_SIZE)
+  #define SP_PORTION_SIZE     512
+#else
 	#define CC3000_RX_BUFFER_SIZE   (CC3000_MAXIMAL_RX_SIZE)
 	#define CC3000_TX_BUFFER_SIZE   (CC3000_MAXIMAL_TX_SIZE)
 	#define SP_PORTION_SIZE	    512
-//if defined TINY DRIVER we use smaller rx and tx buffer in order to minimize RAM consumption
+#endif
 #else
+//if defined TINY DRIVER we use smaller rx and tx buffer in order to minimize RAM consumption
 	#define CC3000_RX_BUFFER_SIZE   (TINY_CC3000_MAXIMAL_RX_SIZE)
 	#define CC3000_TX_BUFFER_SIZE   (TINY_CC3000_MAXIMAL_TX_SIZE)
 	#define SP_PORTION_SIZE	    32
-
 #endif  
 //*****************************************************************************
 //                  Compound Types
