@@ -3,9 +3,7 @@
  *  ArduinoCC3000SPI.cpp - SPI functions to connect an Arduino to the TI
  *                       CC3000
  *
- *  This code uses the Arduino hardware SPI library (There is also a bit
- *  banged version available) to send & receive data between the library
- *  API calls and the CC3000 hardware.
+ *  This code uses the Arduino hardware SPI library.
  *
  *  Version 1.0.1b
  *
@@ -23,6 +21,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 
+#include "debug.hpp"
 #include "core.hpp"
 #include "hci.hpp"
 #include "spi.hpp"
@@ -59,44 +58,21 @@ typedef struct {
 
 tSpiInformation sSpiInformation;
 
-static volatile char wlan_is_in_irq = 0;
-static volatile char missed_irq = 0;
-
 //
 // Static buffer for 5 bytes of SPI HEADER
 //
 unsigned char tSpiReadHeader[] = { READ, 0, 0, 0, 0 };
 
-// The magic number that resides at the end of the TX/RX buffer (1 byte after the allocated size)
-// for the purpose of detection of the overrun. The location of the memory where the magic number 
-// resides shall never be written. In case it is written - the overrun occured and either recevie function
+// The magic number that resides at the end of the TX/RX buffer (1 byte after
+// the allocated size) for the purpose of detection of the overrun. The location
+// of the memory where the magic number resides shall never be written.
+// In case it is written - the overrun occurred and either receive function
 // or send function will stuck forever.
 #define CC3000_BUFFER_MAGIC_NUMBER (0xDE)
 
 char spi_buffer[CC3000_RX_BUFFER_SIZE];
 unsigned char wlan_tx_buffer[CC3000_TX_BUFFER_SIZE];
 
-
-void check_missed_irq(void)
-{
-  if ((digitalRead(WLAN_IRQ) == LOW) &&
-       (wlan_is_in_irq == 0) &&
-       (wlan_int_status != INT_DISABLED)) {
-    missed_irq = 0;
-    Serial1.write('0'+missed_irq);
-    CC3000InterruptHandler();
-  }
-#if 0
-  if (missed_irq) {
-    // Indicate we found a missing irq and how many
-    Serial1.write('0'+missed_irq);
-    missed_irq = 0;
-    interrupts();
-    CC3000InterruptHandler();
-    return;
-  }
-#endif
-}
 //*****************************************************************************
 //
 //!
@@ -111,11 +87,75 @@ void check_missed_irq(void)
 
 void SpiPauseSpi(void)
 {
-  noInterrupts();
-  wlan_int_status = INT_DISABLED;
-  interrupts();
-  Serial1.write('P');
-//  detachInterrupt(WLAN_IRQ_INTNUM);
+// Copied from the system library
+  switch (WLAN_IRQ_INTNUM) {
+#if defined(__AVR_ATmega32U4__)
+  case 0:
+      EIMSK &= ~(1<<INT0);
+      break;
+  case 1:
+      EIMSK &= ~(1<<INT1);
+      break;
+  case 2:
+      EIMSK &= ~(1<<INT2);
+      break;
+  case 3:
+      EIMSK &= ~(1<<INT3);
+      break;
+  case 4:
+      EIMSK &= ~(1<<INT6);
+      break;
+#elif defined(EICRA) && defined(EICRB) && defined(EIMSK)
+  case 2:
+    EIMSK &= ~(1 << INT0);
+    break;
+  case 3:
+    EIMSK &= ~(1 << INT1);
+    break;
+  case 4:
+    EIMSK &= ~(1 << INT2);
+    break;
+  case 5:
+    EIMSK &= ~(1 << INT3);
+    break;
+  case 0:
+    EIMSK &= ~(1 << INT4);
+    break;
+  case 1:
+    EIMSK &= ~(1 << INT5);
+    break;
+  case 6:
+    EIMSK &= ~(1 << INT6);
+    break;
+  case 7:
+    EIMSK &= ~(1 << INT7);
+    break;
+#else
+  case 0:
+  #if defined(EIMSK) && defined(INT0)
+    EIMSK &= ~(1 << INT0);
+  #elif defined(GICR) && defined(ISC00)
+    GICR &= ~(1 << INT0); // atmega32
+  #elif defined(GIMSK) && defined(INT0)
+    GIMSK &= ~(1 << INT0);
+  #else
+    #error detachInterrupt not finished for this cpu
+  #endif
+    break;
+
+  case 1:
+  #if defined(EIMSK) && defined(INT1)
+    EIMSK &= ~(1 << INT1);
+  #elif defined(GICR) && defined(INT1)
+    GICR &= ~(1 << INT1); // atmega32
+  #elif defined(GIMSK) && defined(INT1)
+    GIMSK &= ~(1 << INT1);
+  #else
+    #warning detachInterrupt may need some more work for this cpu (case 1)
+  #endif
+    break;
+#endif
+  }
 }
 
 //*****************************************************************************
@@ -132,17 +172,79 @@ void SpiPauseSpi(void)
 
 void SpiResumeSpi(void)
 {
-  noInterrupts();
-  wlan_int_status = INT_ENABLED;
-  interrupts();
-  Serial1.write('R');
-  if (missed_irq) {
-    Serial1.write('0'+missed_irq);
-    missed_irq = 0;
-    CC3000InterruptHandler();
-    return;
+  // Enable interrupts again
+  // We do not want to use attachInterrupt and detachInterrupt since they can
+  // cause spurious interrupts to occur when EICB registers are modified.
+  // The system libraries should have included maskInterrupt and unmaskInterrupt
+  // functions as well.
+  switch (WLAN_IRQ_INTNUM) {
+#if defined(__AVR_ATmega32U4__)
+  case 0:
+      EIMSK |= (1<<INT0);
+      break;
+  case 1:
+      EIMSK |= (1<<INT1);
+      break;
+  case 2:
+      EIMSK |= (1<<INT2);
+      break;
+  case 3:
+      EIMSK |= (1<<INT3);
+      break;
+  case 4:
+      EIMSK |= (1<<INT6);
+      break;
+#elif defined(EICRA) && defined(EICRB) && defined(EIMSK)
+  case 2:
+    EIMSK |= (1 << INT0);
+    break;
+  case 3:
+    EIMSK |= (1 << INT1);
+    break;
+  case 4:
+    EIMSK |= (1 << INT2);
+    break;
+  case 5:
+    EIMSK |= (1 << INT3);
+    break;
+  case 0:
+    EIMSK |= (1 << INT4);
+    break;
+  case 1:
+    EIMSK |= (1 << INT5);
+    break;
+  case 6:
+    EIMSK |= (1 << INT6);
+    break;
+  case 7:
+    EIMSK |= (1 << INT7);
+    break;
+#else
+  case 0:
+  #if defined(EIMSK) && defined(INT0)
+    EIMSK |= (1 << INT0);
+  #elif defined(GICR) && defined(ISC00)
+    GICR |= (1 << INT0); // atmega32
+  #elif defined(GIMSK) && defined(INT0)
+    GIMSK |= (1 << INT0);
+  #else
+    #error detachInterrupt not finished for this cpu
+  #endif
+    break;
+
+  case 1:
+  #if defined(EIMSK) && defined(INT1)
+    EIMSK |= (1 << INT1);
+  #elif defined(GICR) && defined(INT1)
+    GICR |= (1 << INT1); // atmega32
+  #elif defined(GIMSK) && defined(INT1)
+    GIMSK |= (1 << INT1);
+  #else
+    #warning detachInterrupt may need some more work for this cpu (case 1)
+  #endif
+    break;
+#endif
   }
-  //  attachInterrupt(WLAN_IRQ_INTNUM, CC3000InterruptHandler, FALLING);
 }
 
 //*****************************************************************************
@@ -161,16 +263,16 @@ void SpiTriggerRxProcessing(void)
   //
   // Trigger Rx processing
   //
-  Serial1.write('<');
   SpiPauseSpi();
-  Serial1.write('>');
   negate_cs();
 
-  // The magic number that resides at the end of the TX/RX buffer (1 byte after the allocated size)
-  // for the purpose of detection of the overrun. If the magic number is overriten - buffer overrun
-  // occurred - and we will stuck here forever!
+  // The magic number that resides at the end of the TX/RX buffer (1 byte after
+  // the allocated size) for the purpose of detection of the overrun.
+  // If the magic number is overriten - a buffer overrun has occurred - and we
+  // will stay here forever!
   if (sSpiInformation.pRxPacket[CC3000_RX_BUFFER_SIZE - 1]
       != CC3000_BUFFER_MAGIC_NUMBER) {
+    lSer.println ("Error: buffer overwritten !");
     while (1);
   }
 
@@ -474,29 +576,22 @@ void SpiReadHeader(void)
 //*****************************************************************************
 void CC3000InterruptHandler(void)
 {
-  wlan_is_in_irq = 1;
-  if (wlan_int_status == INT_ENABLED) {
-    if (sSpiInformation.ulSpiState == eSPI_STATE_POWERUP) {
-      /* This means IRQ line was low call a callback of HCI Layer to inform on event */
-      sSpiInformation.ulSpiState = eSPI_STATE_INITIALIZED;
-    } else if (sSpiInformation.ulSpiState == eSPI_STATE_IDLE) {
-      sSpiInformation.ulSpiState = eSPI_STATE_READ_IRQ;
-      /* IRQ line goes down - start reception */
-      assert_cs();
-      SpiReadHeader();
-      sSpiInformation.ulSpiState = eSPI_STATE_READ_EOT;
-      SSIContReadOperation();
-    } else if (sSpiInformation.ulSpiState == eSPI_STATE_WRITE_IRQ) {
-      SpiWriteDataSynchronous(sSpiInformation.pTxPacket,
-          sSpiInformation.usTxPacketLength);
-      sSpiInformation.ulSpiState = eSPI_STATE_IDLE;
-      negate_cs();
-    }
-  } else {
-    missed_irq++;
-    UDR1='?';
+  if (sSpiInformation.ulSpiState == eSPI_STATE_POWERUP) {
+    /* This means IRQ line was low call a callback of HCI Layer to inform on event */
+    sSpiInformation.ulSpiState = eSPI_STATE_INITIALIZED;
+  } else if (sSpiInformation.ulSpiState == eSPI_STATE_IDLE) {
+    sSpiInformation.ulSpiState = eSPI_STATE_READ_IRQ;
+    /* IRQ line goes down - start reception */
+    assert_cs();
+    SpiReadHeader();
+    sSpiInformation.ulSpiState = eSPI_STATE_READ_EOT;
+    SSIContReadOperation();
+  } else if (sSpiInformation.ulSpiState == eSPI_STATE_WRITE_IRQ) {
+    SpiWriteDataSynchronous(sSpiInformation.pTxPacket,
+        sSpiInformation.usTxPacketLength);
+    sSpiInformation.ulSpiState = eSPI_STATE_IDLE;
+    negate_cs();
   }
-  wlan_is_in_irq = 0;
 }
 
 //*****************************************************************************
@@ -569,7 +664,7 @@ int SpiInit(void)
 
   // Disable the CC3000 by default */
   pinMode(WLAN_EN, OUTPUT);
-  digitalWrite(WLAN_EN, 0);
+  digitalWriteFast(WLAN_EN, 0);
   delay(500);
 
   /* Set CS pin to output */
@@ -577,7 +672,7 @@ int SpiInit(void)
 
   /* Set interrupt pin to input */
   pinMode(WLAN_IRQ, INPUT);
-  digitalWrite(WLAN_IRQ, HIGH); /* Use a weak pullup */
+  digitalWriteFast(WLAN_IRQ, HIGH); /* Use a weak pullup */
 
   /* Initialise SPI */
   SPI.begin();

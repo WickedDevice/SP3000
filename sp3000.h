@@ -20,5 +20,6 @@
 #include "evnt_handler.hpp"
 #include "leds.hpp"
 #include "socket-support.hpp"
+#include "sense.hpp"
 
 #endif

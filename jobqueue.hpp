@@ -8,6 +8,7 @@
 #ifndef JOBQUEUE_HPP_
 #define JOBQUEUE_HPP_
 
+#include <stdint.h>
 /**
  * List of available jobs in the system.
  */

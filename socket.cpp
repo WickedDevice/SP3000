@@ -45,6 +45,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
+#include "debug.hpp"
 #include "hci.hpp"
 #include "socket.hpp"
 #include "evnt_handler.hpp"
@@ -841,7 +842,7 @@ int simple_link_recv(long sd, void *buf, long len, long flags, sockaddr *from,
 
   // In case the number of bytes is more then zero - read data
   if (tSocketReadEvent.iNumberOfBytes > 0) {
-    // Wait for the data in a synchronous way. Here we assume that the bug is
+    // Wait for the data in a synchronous way. Here we assume that buf is
     // big enough to store also parameters of receive from too....
     SimpleLinkWaitData((unsigned char *) buf, (unsigned char *) from,
         (unsigned char *) fromlen);
@@ -997,18 +998,14 @@ int simple_link_send(long sd, const void *buf, long len, long flags,
     ARRAY_TO_STREAM(pDataPtr, ((unsigned char * )to), tolen);
   }
 
-//  Serial1.println (F("calling hci_data send"));
   // Initiate a HCI command
-  //check_missed_irq();
   hci_data_send(opcode, ptr, uArgSize, len, (unsigned char*) to, tolen);
 
-//  Serial1.println (F("Waiting for simple link event"));
   if (opcode == HCI_CMND_SENDTO)
     SimpleLinkWaitEvent(HCI_EVNT_SENDTO, &tSocketSendEvent);
   else
     SimpleLinkWaitEvent(HCI_EVNT_SEND, &tSocketSendEvent);
 
-//  Serial1.println (F("Got event, returning from send"));
   return (len);
 }
 

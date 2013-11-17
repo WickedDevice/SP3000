@@ -20,10 +20,15 @@ enum led_state {
   LED_ON = 0x01
 };
 
+#ifndef SP_DISABLE_LEDS
 //
 // Function prototypes
 //
 void setled (uint8_t led, uint8_t value);
 void initled (void);
+#else
+#define setled(x,y)
+#define initled()
+#endif
 
 #endif /* LEDS_HPP_ */
