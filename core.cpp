@@ -101,7 +101,8 @@ void CC3000_AsyncCallback(long lEventType, char * data, unsigned char length)
 		case HCI_EVNT_WLAN_UNSOL_DHCP:
 			// Notes: 
 			// 1) IP config parameters are received swapped
-			// 2) IP config parameters are valid only if status is OK, i.e. ulCC3000DHCP becomes 1
+			// 2) IP config parameters are valid only if status is OK, i.e.
+            //    ulCC3000DHCP becomes 1
 			// only if status is OK, the flag is set to 1 and the addresses are valid
 			if ( *(data + NETAPP_IPCONFIG_MAC_OFFSET) == 0) {
 				ulCC3000DHCP = 1;
@@ -201,12 +202,6 @@ inline void WriteWlanEnablePin(unsigned char val)
     The TI library calls these routines to enable or disable interrupts
     on the WLAN_IRQ pin.
     
-    Originally WlanInterruptEnable() called attachInterrupt() and
-    WlanInterruptDisable() called detachInterrupt() but the library
-    was occationally locking up here, so now these routines just
-    set a flag. The interrupt routine will always fire but if the
-    flag isn't set it just returns immediately.
-    
  --------------------------------------------------------------------*/
 void WlanInterruptEnable(void) 
 {
@@ -228,7 +223,7 @@ void WlanInterruptDisable(void)
     to indicate we're not sending any patches.
     
  --------------------------------------------------------------------*/
-void CC3000_Init(byte startReqest,
+void sp_wifi_init (byte startReqest,
                  uint8_t cs_pin,
                  uint8_t en_pin,
                  uint8_t irq_pin,
@@ -249,6 +244,7 @@ void CC3000_Init(byte startReqest,
   * Initialize the PCA9536
   */
 	initled();
+
 	/* 
 	 * Set the initial state of the output pins before
 	 * enabling them as outputs in order to avoid

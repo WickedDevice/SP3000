@@ -341,14 +341,14 @@ static int parse_poll_response (uint32_t s, char *buff)
   byte markcnt = 0;
   char c;
 
-  // Make sure we have some data comming
+  // Make sure we have some data coming
   if (!data_available(s, 5))
     return -SENSE_ERR_TIMEOUT;
 
   while (data_available(s)) {
     c = sp_read (s);
     if ('\"' == c) {
-      if (++markcnt == 3) {
+      if (++markcnt == 7) {
         while (data_available(s)) {
           if ((c = sp_read(s)) == '\"') {
             *buff = 0;
@@ -362,14 +362,13 @@ static int parse_poll_response (uint32_t s, char *buff)
   return -SENSE_ERR_JSON_ERROR;
 }
 
-int sp_sense_poll (uint32_t feed_id, char *event_id, char *output,
-    boolean is_device, boolean req_type)
+int sp_sense_poll (uint32_t feed_id, char *output, boolean is_device)
 {
   uint32_t s;
   int res;
 
   // Sanity check
-  if (!feed_id || !event_id || !output)
+  if (!feed_id || !output)
     return -SENSE_ERR_PARAMETER;
 
   // Establish connection to sen.se
@@ -380,21 +379,29 @@ int sp_sense_poll (uint32_t feed_id, char *event_id, char *output,
 
   PRINTLN (F("POLL: Sending http headers !"));
   if (is_device)
-    sp_send (s, "GET /rt/device/");
-  else
-    sp_send (s, "GET /rt/feed/");
+    sp_send (s, F("GET /devices/"));
+  else {
+    sp_send (s, F("GET /feeds/"));
+  }
 
   sp_send (s, feed_id);
-  sp_send (s, "/events?last=");
-  sp_send (s, event_id);
-  sp_send (s, "&amp;sense_key=");
+  sp_send (s, F("/last_event/?sense_key="));
   sp_send (s, sense_key);
-  if (req_type) {
-    sp_send (s, "&amp;req_type=last");
+  sp_send (s, F(" HTTP/1.1\n"));
+  sp_send (s, F("Host: api.sen.se\n"));
+  sp_send (s, F("Content-Type: application/json\r\n"));
+  sp_send (s, F("Content-Length: 0\r\n"));
+  sp_send (s, F("Connection: Keep-Alive"));
+  sp_send (s, F("\r\n\r\n"));
+
+  PRINTLN (F("Reading http headers !"));
+  if ((res = read_http_headers(s)) < 0) {
+    PRINT (F("Error "));
+    PRINT (res);
+    PRINTLN (F(" occurred, terminating sen.se communication !"));
+    closesocket(s);
+    return res;
   }
-  sp_send (s, " HTTP/1.1\n");
-  sp_send (s, "Host: api.sen.se\n");
-  sp_send (s, "\r\n\r\n");
 
   res = parse_poll_response (s, output);
 
@@ -406,10 +413,8 @@ int sp_sense_poll (uint32_t feed_id, char *event_id, char *output,
 
 int sp_sense_poll (uint32_t feed_id, char *output)
 {
-  return sp_sense_poll (feed_id, "-1", output, false, true);
+  return sp_sense_poll (feed_id, output, false);
 }
 
-int sp_sense_poll (uint32_t feed_id, char *event_id, char *output)
-{
-  return sp_sense_poll (feed_id, event_id, output, false, true);
-}
+/* EOF */
+

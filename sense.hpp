@@ -68,22 +68,21 @@ int sp_sense_send (byte size, SenseData* data);
 
 /**
  * Polling function for getting data from a sen.se output feed. This function
- * can be used to get an event from both a device and a feed. If you are
+ * can be used to get the last event from both a device and a feed. If you are
  * polling data from a device you need to specify the device id instead of the
  * feed id and set the is_device parameter to true.
  *
+ * Please note that the parser is extremely simple and will only return the
+ * "value" field from  the json response.
+ *
  * @param feed_id The ID of the sen.se feed.
- * @param event_id The event ID of the event that you want.
  * @param output This is where this function stores the result. The caller
  *               must ensure that this array is large enough for the received
  *               data.
  * @param is_device Set this to true if you are pulling data from a device.
- * @param req_type If you set this to true you will be pulling the last data
- *                 entry from the device or feed.
  * @return A status code indicating if the call was successful or not.
  */
-int sp_sense_poll (uint32_t feed_id, char *event_id, char *output,
-    boolean is_device, boolean req_type);
+int sp_sense_poll (uint32_t feed_id, char *output, boolean is_device);
 
 /**
  * Polling function for getting data from a sen.se output feed. This function
@@ -96,18 +95,5 @@ int sp_sense_poll (uint32_t feed_id, char *event_id, char *output,
  * @return A status code indicating if the call was successful or not.
  */
 int sp_sense_poll (uint32_t feed_id, char *output);
-
-/**
- * Polling function for getting data from a sen.se output feed. This function
- * retrieves a specific event in the feed stream.
- *
- * @param feed_id The ID of the sen.se feed.
- * @param event_id The event ID of the event that you want.
- * @param output This is where this function stores the result. The caller
- *               must ensure that this array is large enough for the received
- *               data.
- * @return A status code indicating if the call was successful or not.
- */
-int sp_sense_poll (uint32_t feed_id, char *event_id, char *output);
 
 #endif /* SENSE_HPP_ */

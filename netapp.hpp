@@ -105,10 +105,10 @@ extern long  netapp_config_mac_adrress( unsigned char *mac );
 //
 //!  netapp_dhcp
 //!
-//!  @param  aucIP               device mac address, 6 bytes. Saved: yes 
-//!  @param  aucSubnetMask       device mac address, 6 bytes. Saved: yes 
-//!  @param  aucDefaultGateway   device mac address, 6 bytes. Saved: yes 
-//!  @param  aucDNSServer        device mac address, 6 bytes. Saved: yes 
+//!  @param  aucIP               device IP address, 4 bytes. Saved: yes
+//!  @param  aucSubnetMask       device netmask address, 4 bytes. Saved: yes
+//!  @param  aucDefaultGateway   device default gateway address, 4 bytes. Saved: yes
+//!  @param  aucDNSServer        device DNS server address, 4 bytes. Saved: yes
 //!
 //!  @return       return on success 0, otherwise error.
 //!
@@ -127,9 +127,8 @@ extern long  netapp_config_mac_adrress( unsigned char *mac );
 //!               AP was established. 
 //!
 //*****************************************************************************
-extern 	long netapp_dhcp(unsigned long *aucIP, unsigned long *aucSubnetMask,unsigned long *aucDefaultGateway, unsigned long *aucDNSServer);
-
-
+extern 	long netapp_dhcp(unsigned long *aucIP, unsigned long *aucSubnetMask,
+    unsigned long *aucDefaultGateway, unsigned long *aucDNSServer);
 
 //*****************************************************************************
 //

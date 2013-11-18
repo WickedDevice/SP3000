@@ -52,7 +52,7 @@ extern uint8_t WLAN_IRQ;         // Arduino pin connected to CC3000 WLAN_SPI_IRQ
 extern uint8_t WLAN_IRQ_INTNUM;  // The attachInterrupt() number that corresponds
                                   // to WLAN_IRQ
 
-extern void CC3000_Init(byte mode,
+extern void sp_wifi_init (byte mode,
                          uint8_t WLAN_CS,
                          uint8_t WLAN_EN,
                          uint8_t WLAN_IRQ,
