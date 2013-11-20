@@ -140,7 +140,7 @@ void loop(void)
     if (wlan_connected) {
       if (!ulCC3000Connected) {
         wlan_connected = 0;
-        lSer.print (F("WLAN Disconnected ""));
+        lSer.print (F("WLAN Disconnected "));
       }
     }
   }
