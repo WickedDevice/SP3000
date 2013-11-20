@@ -104,6 +104,16 @@ extern "C" {
 //!  @warning This function must be called before ANY other wlan driver function
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern void c_wlan_init(tWlanCB sWlanCB,
+                        tFWPatches sFWPatches,
+                        tDriverPatches sDriverPatches,
+                        tBootLoaderPatches sBootLoaderPatches,
+                        tWlanReadInteruptPin  sReadWlanInterruptPin,
+                        tWlanInterruptEnable  sWlanInterruptEnable,
+                        tWlanInterruptDisable sWlanInterruptDisable,
+                        tWriteWlanPin sWriteWlanPin);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern void wlan_init(		tWlanCB	 	sWlanCB,
 	   			tFWPatches sFWPatches,
 	   			tDriverPatches sDriverPatches,
@@ -114,6 +124,7 @@ extern void wlan_init(		tWlanCB	 	sWlanCB,
                 tWriteWlanPin         sWriteWlanPin);
 
 
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -141,7 +152,11 @@ extern void wlan_init(		tWlanCB	 	sWlanCB,
 //!
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern void c_wlan_start(unsigned short usPatchesAvailableAtHost);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern void wlan_start(unsigned short usPatchesAvailableAtHost);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -156,7 +171,11 @@ extern void wlan_start(unsigned short usPatchesAvailableAtHost);
 //!  @sa            wlan_start
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern void c_wlan_stop(void);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern void wlan_stop(void);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -188,6 +207,15 @@ extern void wlan_stop(void);
 //!  @sa         wlan_disconnect
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+#ifndef CC3000_TINY_DRIVER
+extern long c_wlan_connect(unsigned long ulSecType, char *ssid, long ssid_len,
+                           unsigned char *bssid, unsigned char *key, long key_len);
+#else
+extern long c_wlan_connect(char *ssid, long ssid_len);
+#endif
+
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 #ifndef CC3000_TINY_DRIVER
 extern long wlan_connect(unsigned long ulSecType, char *ssid, long ssid_len,
                         unsigned char *bssid, unsigned char *key, long key_len);
@@ -195,6 +223,7 @@ extern long wlan_connect(unsigned long ulSecType, char *ssid, long ssid_len,
 extern long wlan_connect(char *ssid, long ssid_len);
 
 #endif
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -208,7 +237,11 @@ extern long wlan_connect(char *ssid, long ssid_len);
 //
 //*****************************************************************************
 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern long c_wlan_disconnect(void);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern long wlan_disconnect(void);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -238,6 +271,17 @@ extern long wlan_disconnect(void);
 //
 //*****************************************************************************
 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern long c_wlan_add_profile(unsigned long ulSecType, unsigned char* ucSsid,
+                                         unsigned long ulSsidLen,
+                                         unsigned char *ucBssid,
+                                         unsigned long ulPriority,
+                                         unsigned long ulPairwiseCipher_Or_Key,
+                                         unsigned long ulGroupCipher_TxKeyLen,
+                                         unsigned long ulKeyMgmt,
+                                         unsigned char* ucPf_OrKey,
+                                         unsigned long ulPassPhraseLen);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern long wlan_add_profile(unsigned long ulSecType, unsigned char* ucSsid,
 										 unsigned long ulSsidLen, 
 										 unsigned char *ucBssid,
@@ -247,6 +291,7 @@ extern long wlan_add_profile(unsigned long ulSecType, unsigned char* ucSsid,
                                          unsigned long ulKeyMgmt,
                                          unsigned char* ucPf_OrKey,
                                          unsigned long ulPassPhraseLen);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 
 
@@ -265,7 +310,11 @@ extern long wlan_add_profile(unsigned long ulSecType, unsigned char* ucSsid,
 //!  @sa        wlan_add_profile 
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern long c_wlan_ioctl_del_profile(unsigned long ulIndex);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern long wlan_ioctl_del_profile(unsigned long ulIndex);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -288,7 +337,11 @@ extern long wlan_ioctl_del_profile(unsigned long ulIndex);
 //!            masked (1), the device will not send the masked event to host. 
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern long c_wlan_set_event_mask(unsigned long ulMask);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern long wlan_set_event_mask(unsigned long ulMask);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -302,7 +355,11 @@ extern long wlan_set_event_mask(unsigned long ulMask);
 //!  @brief    get wlan status: disconnected, scanning, connecting or connected
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern long c_wlan_ioctl_statusget(void);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern long wlan_ioctl_statusget(void);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 
 //*****************************************************************************
@@ -336,10 +393,15 @@ extern long wlan_ioctl_statusget(void);
 //!  @sa         wlan_add_profile , wlan_ioctl_del_profile 
 //
 //*****************************************************************************
-extern long wlan_ioctl_set_connection_policy(
-                                        unsigned long should_connect_to_open_ap,
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern long c_wlan_ioctl_set_connection_policy(unsigned long should_connect_to_open_ap,
                                         unsigned long should_use_fast_connect,
                                         unsigned long ulUseProfiles);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+extern long wlan_ioctl_set_connection_policy(unsigned long should_connect_to_open_ap,
+                                               unsigned long should_use_fast_connect,
+                                               unsigned long ulUseProfiles);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -376,8 +438,13 @@ extern long wlan_ioctl_set_connection_policy(
 //*****************************************************************************
 
 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern long c_wlan_ioctl_get_scan_results(unsigned long ulScanTimeout,
+                                          unsigned char *ucResults);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern long wlan_ioctl_get_scan_results(unsigned long ulScanTimeout,
                                        unsigned char *ucResults);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -415,13 +482,19 @@ extern long wlan_ioctl_get_scan_results(unsigned long ulScanTimeout,
 //!  @sa        wlan_ioctl_get_scan_results 
 //
 //*****************************************************************************
-extern long wlan_ioctl_set_scan_params(unsigned long uiEnable, unsigned long 
-											 uiMinDwellTime,unsigned long uiMaxDwellTime,
-										   unsigned long uiNumOfProbeRequests,
-											 unsigned long uiChannelMask,
-										   long iRSSIThreshold,unsigned long uiSNRThreshold,
-										   unsigned long uiDefaultTxPower, 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern long c_wlan_ioctl_set_scan_params(unsigned long uiEnable, unsigned long uiMinDwellTime,
+                                         unsigned long uiMaxDwellTime, unsigned long uiNumOfProbeRequests,
+                                         unsigned long uiChannelMask, long iRSSIThreshold,
+                                         unsigned long uiSNRThreshold, unsigned long uiDefaultTxPower,
 											 unsigned long *aiIntervalList);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+extern long wlan_ioctl_set_scan_params(unsigned long uiEnable, unsigned long uiMinDwellTime,
+                                         unsigned long uiMaxDwellTime, unsigned long uiNumOfProbeRequests,
+                                         unsigned long uiChannelMask, long iRSSIThreshold,
+                                         unsigned long uiSNRThreshold, unsigned long uiDefaultTxPower,
+                                         unsigned long *aiIntervalList);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
                                            
 //*****************************************************************************
@@ -444,8 +517,12 @@ extern long wlan_ioctl_set_scan_params(unsigned long uiEnable, unsigned long
 //!  @sa      wlan_smart_config_set_prefix , wlan_smart_config_stop
 //
 //*****************************************************************************                                        
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern long c_wlan_smart_config_start(unsigned long algoEncryptedFlag);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern long wlan_smart_config_start(unsigned long algoEncryptedFlag);
 
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -460,7 +537,11 @@ extern long wlan_smart_config_start(unsigned long algoEncryptedFlag);
 //!  @sa      wlan_smart_config_start , wlan_smart_config_set_prefix
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern long c_wlan_smart_config_stop(void);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern long wlan_smart_config_stop(void);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -478,7 +559,11 @@ extern long wlan_smart_config_stop(void);
 //!  @sa      wlan_smart_config_start , wlan_smart_config_stop
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern long c_wlan_smart_config_set_prefix(char* cNewPrefix);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern long wlan_smart_config_set_prefix(char* cNewPrefix);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -494,7 +579,11 @@ extern long wlan_smart_config_set_prefix(char* cNewPrefix);
 //!           behavior is as defined by connection policy.
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern long c_wlan_smart_config_process(void);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern long wlan_smart_config_process(void);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //

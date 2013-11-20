@@ -48,9 +48,6 @@
 extern "C" {
 #endif
 
-
-#define AES128_KEY_SIZE		16
-
 #ifndef CC3000_UNENCRYPTED_SMART_CONFIG
 
 
@@ -70,7 +67,11 @@ extern "C" {
 //!	 
 //!
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern void c_aes_encrypt(unsigned char *state, unsigned char *key);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern void aes_encrypt(unsigned char *state, unsigned char *key);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -88,8 +89,12 @@ extern void aes_encrypt(unsigned char *state, unsigned char *key);
 //!	 
 //!
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern void c_aes_decrypt(unsigned char *state, unsigned char *key);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern void aes_decrypt(unsigned char *state, unsigned char *key);
 
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -105,7 +110,11 @@ extern void aes_decrypt(unsigned char *state, unsigned char *key);
 //!	 
 //!
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern signed long c_aes_read_key(unsigned char *key);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern signed long aes_read_key(unsigned char *key);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -120,7 +129,11 @@ extern signed long aes_read_key(unsigned char *key);
 //!	 
 //!
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern signed long c_aes_write_key(unsigned char *key);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern signed long aes_write_key(unsigned char *key);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 #endif //CC3000_UNENCRYPTED_SMART_CONFIG
 
@@ -128,4 +141,4 @@ extern signed long aes_write_key(unsigned char *key);
 }
 #endif
 
-#endif
+#endif // __SECURITY__

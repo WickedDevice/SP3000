@@ -21,5 +21,6 @@
 #include "leds.hpp"
 #include "socket-support.hpp"
 #include "sense.hpp"
+#include "http.hpp"
 
 #endif

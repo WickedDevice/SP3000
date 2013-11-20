@@ -111,7 +111,7 @@
 //!          regarding the buffers available.
 //
 //*****************************************************************************
-int HostFlowControlConsumeBuff(int sd)
+static int HostFlowControlConsumeBuff(int sd)
 {
 #ifndef SEND_NON_BLOCKING
   /* wait in busy loop */
@@ -183,7 +183,11 @@ int HostFlowControlConsumeBuff(int sd)
 //
 //*****************************************************************************
 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+int c_socket(long domain, long type, long protocol)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 int socket(long domain, long type, long protocol)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
   long ret;
   unsigned char *ptr, *args;
@@ -223,10 +227,17 @@ int socket(long domain, long type, long protocol)
 //
 //*****************************************************************************
 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_closesocket(long sd)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 long closesocket(long sd)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
   long ret;
   unsigned char *ptr, *args;
+
+  // Wait for all buffers to be sent before closing.
+  while (tSLInformation.usNumberOfFreeBuffers != 6);
 
   ret = EFAIL;
   ptr = tSLInformation.pucTxCommandBuffer;
@@ -294,7 +305,11 @@ long closesocket(long sd)
 //
 //*****************************************************************************
 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_accept(long sd, sockaddr *addr, socklen_t *addrlen)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 long accept(long sd, sockaddr *addr, socklen_t *addrlen)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
   long ret;
   unsigned char *ptr, *args;
@@ -352,7 +367,11 @@ long accept(long sd, sockaddr *addr, socklen_t *addrlen)
 //
 //*****************************************************************************
 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_bind(long sd, const sockaddr *addr, long addrlen)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 long bind(long sd, const sockaddr *addr, long addrlen)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
   long ret;
   unsigned char *ptr, *args;
@@ -403,7 +422,11 @@ long bind(long sd, const sockaddr *addr, long addrlen)
 //
 //*****************************************************************************
 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_listen(long sd, long backlog)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 long listen(long sd, long backlog)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
   long ret;
   unsigned char *ptr, *args;
@@ -446,8 +469,13 @@ long listen(long sd, long backlog)
 //*****************************************************************************
 
 #ifndef CC3000_TINY_DRIVER
-int gethostbyname(char * hostname, unsigned short usNameLen,
-    unsigned long* out_ip_addr)
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+int
+c_gethostbyname(char * hostname, unsigned short usNameLen, unsigned long* out_ip_addr)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+int
+gethostbyname(char * hostname, unsigned short usNameLen, unsigned long* out_ip_addr)
+#endif /*__ENABLE_MULTITHREADED_SUPPORT__ */
 {
   tBsdGethostbynameParams ret;
   unsigned char *ptr, *args;
@@ -511,7 +539,11 @@ int gethostbyname(char * hostname, unsigned short usNameLen,
 //
 //*****************************************************************************
 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_connect(long sd, const sockaddr *addr, long addrlen)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 long connect(long sd, const sockaddr *addr, long addrlen)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
   long int ret;
   unsigned char *ptr, *args;
@@ -576,8 +608,13 @@ long connect(long sd, const sockaddr *addr, long addrlen)
 //
 //*****************************************************************************
 
-int select(long nfds, fd_set *readsds, fd_set *writesds, fd_set *exceptsds,
-    struct timeval *timeout)
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+int c_select(long nfds, fd_set *readsds, fd_set *writesds,
+                    fd_set *exceptsds, struct timeval *timeout)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+int select(long nfds, fd_set *readsds, fd_set *writesds,
+                    fd_set *exceptsds, struct timeval *timeout)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
   unsigned char *ptr, *args;
   tBsdSelectRecvParams tParams;
@@ -689,8 +726,13 @@ int select(long nfds, fd_set *readsds, fd_set *writesds, fd_set *exceptsds,
 //*****************************************************************************
 
 #ifndef CC3000_TINY_DRIVER
-int setsockopt(long sd, long level, long optname, const void *optval,
-    socklen_t optlen)
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+int
+c_setsockopt(long sd, long level, long optname, const void *optval, socklen_t optlen)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+int
+setsockopt(long sd, long level, long optname, const void *optval, socklen_t optlen)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
   int ret;
   unsigned char *ptr, *args;
@@ -717,7 +759,7 @@ int setsockopt(long sd, long level, long optname, const void *optval,
     return (0);
   } else {
     errno = ret;
-    return -1;
+    return (errno);
   }
 }
 #endif
@@ -769,8 +811,13 @@ int setsockopt(long sd, long level, long optname, const void *optval,
 //
 //*****************************************************************************
 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+int c_getsockopt(long sd, long level, long optname, void *optval,
+                         socklen_t *optlen)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 int getsockopt(long sd, long level, long optname, void *optval,
     socklen_t *optlen)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
   unsigned char *ptr, *args;
   tBsdGetSockOptReturnParams tRetParams;
@@ -795,7 +842,7 @@ int getsockopt(long sd, long level, long optname, void *optval,
     return (0);
   } else {
     errno = tRetParams.iStatus;
-    return errno;
+    return (errno);
   }
 }
 
@@ -820,8 +867,8 @@ int getsockopt(long sd, long level, long optname, void *optval,
 //!                  socket the message is received from
 //
 //*****************************************************************************
-int simple_link_recv(long sd, void *buf, long len, long flags, sockaddr *from,
-    socklen_t *fromlen, long opcode)
+static int simple_link_recv(long sd, void *buf, long len, long flags, 
+    sockaddr *from, socklen_t *fromlen, long opcode)
 {
   unsigned char *ptr, *args;
   tBsdReadReturnParams tSocketReadEvent;
@@ -844,7 +891,7 @@ int simple_link_recv(long sd, void *buf, long len, long flags, sockaddr *from,
   if (tSocketReadEvent.iNumberOfBytes > 0) {
     // Wait for the data in a synchronous way. Here we assume that buf is
     // big enough to store also parameters of receive from too....
-    SimpleLinkWaitData((unsigned char *) buf, (unsigned char *) from,
+    SimpleLinkWaitData((unsigned char *)buf, (unsigned char *) from,
         (unsigned char *) fromlen);
   }
 
@@ -875,7 +922,11 @@ int simple_link_recv(long sd, void *buf, long len, long flags, sockaddr *from,
 //
 //*****************************************************************************
 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+int c_recv(long sd, void *buf, long len, long flags)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 int recv(long sd, void *buf, long len, long flags)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
   return (simple_link_recv(sd, buf, len, flags, NULL, NULL, HCI_CMND_RECV));
 }
@@ -908,8 +959,13 @@ int recv(long sd, void *buf, long len, long flags)
 //!  @Note On this version, only blocking mode is supported.
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+int c_recvfrom(long sd, void *buf, long len, long flags, sockaddr *from,
+                      socklen_t *fromlen)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 int recvfrom(long sd, void *buf, long len, long flags, sockaddr *from,
     socklen_t *fromlen)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
   return (simple_link_recv(sd, buf, len, flags, from, fromlen,
       HCI_CMND_RECVFROM));
@@ -935,7 +991,7 @@ int recvfrom(long sd, void *buf, long len, long flags, sockaddr *from,
 //!                  socket
 //
 //*****************************************************************************
-int simple_link_send(long sd, const void *buf, long len, long flags,
+static int simple_link_send(long sd, const void *buf, long len, long flags,
     const sockaddr *to, long tolen, long opcode)
 {
   unsigned char uArgSize, addrlen;
@@ -1031,7 +1087,11 @@ int simple_link_send(long sd, const void *buf, long len, long flags,
 //
 //*****************************************************************************
 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+int c_send(long sd, const void *buf, long len, long flags)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 int send(long sd, const void *buf, long len, long flags)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
   return (simple_link_send(sd, buf, len, flags, NULL, 0, HCI_CMND_SEND));
 }
@@ -1062,8 +1122,13 @@ int send(long sd, const void *buf, long len, long flags)
 //
 //*****************************************************************************
 
-int sendto(long sd, const void *buf, long len, long flags, const sockaddr *to,
-    socklen_t tolen)
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+int c_sendto(long sd, const void *buf, long len, long flags,
+                  const sockaddr *to, socklen_t tolen)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+int sendto(long sd, const void *buf, long len, long flags,
+                  const sockaddr *to, socklen_t tolen)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
   return (simple_link_send(sd, buf, len, flags, to, tolen, HCI_CMND_SENDTO));
 }
@@ -1085,8 +1150,11 @@ int sendto(long sd, const void *buf, long len, long flags, const sockaddr *to,
 //
 //*****************************************************************************
 
-int mdnsAdvertiser(unsigned short mdnsEnabled, char * deviceServiceName,
-    unsigned short deviceServiceNameLength)
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+int c_mdnsAdvertiser(unsigned short mdnsEnabled, char * deviceServiceName, unsigned short deviceServiceNameLength)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+int mdnsAdvertiser(unsigned short mdnsEnabled, char * deviceServiceName, unsigned short deviceServiceNameLength)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
   int ret;
   unsigned char *pTxBuffer, *pArgs;

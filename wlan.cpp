@@ -180,6 +180,16 @@ static void SimpleLink_Init_Start(unsigned short usPatchesAvailableAtHost)
 //
 //*****************************************************************************
 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+void c_wlan_init(tWlanCB sWlanCB,
+                 tFWPatches sFWPatches,
+                 tDriverPatches sDriverPatches,
+                 tBootLoaderPatches sBootLoaderPatches,
+                 tWlanReadInteruptPin  sReadWlanInterruptPin,
+                 tWlanInterruptEnable  sWlanInterruptEnable,
+                 tWlanInterruptDisable sWlanInterruptDisable,
+                 tWriteWlanPin sWriteWlanPin)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 void wlan_init(		tWlanCB	 	sWlanCB,
 							 tFWPatches sFWPatches,
 							 tDriverPatches sDriverPatches,
@@ -188,6 +198,7 @@ void wlan_init(		tWlanCB	 	sWlanCB,
 							 tWlanInterruptEnable  sWlanInterruptEnable,
 							 tWlanInterruptDisable sWlanInterruptDisable,
 							 tWriteWlanPin         sWriteWlanPin)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	
 	tSLInformation.sFWPatches = sFWPatches;
@@ -257,8 +268,11 @@ void SpiReceiveHandler(void *pvBuffer)
 //
 //*****************************************************************************
 
-void
-wlan_start(unsigned short usPatchesAvailableAtHost)
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+void c_wlan_start(unsigned short usPatchesAvailableAtHost)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+void wlan_start(unsigned short usPatchesAvailableAtHost)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	
 	unsigned long ulSpiIRQState;
@@ -327,8 +341,11 @@ wlan_start(unsigned short usPatchesAvailableAtHost)
 //
 //*****************************************************************************
 
-void
-wlan_stop(void)
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+void c_wlan_stop(void)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+void wlan_stop(void)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	// ASIC 1273 chip disable
 	tSLInformation.WriteWlanPin( WLAN_DISABLE );
@@ -380,9 +397,13 @@ wlan_stop(void)
 //*****************************************************************************
   
 #ifndef CC3000_TINY_DRIVER
-long
-wlan_connect(unsigned long ulSecType, char *ssid, long ssid_len,
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_wlan_connect(unsigned long ulSecType, char *ssid, long ssid_len,
              unsigned char *bssid, unsigned char *key, long key_len)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+long wlan_connect(unsigned long ulSecType, char *ssid, long ssid_len,
+                  unsigned char *bssid, unsigned char *key, long key_len)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	long ret;
 	unsigned char *ptr;
@@ -434,8 +455,11 @@ wlan_connect(unsigned long ulSecType, char *ssid, long ssid_len,
 	return(ret);
 }
 #else
-long
-wlan_connect(const char *ssid, long ssid_len)
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_wlan_connect(char *ssid, long ssid_len)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+long wlan_connect(char *ssid, long ssid_len)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	long ret;
 	unsigned char *ptr;
@@ -482,8 +506,11 @@ wlan_connect(const char *ssid, long ssid_len)
 //
 //*****************************************************************************
 
-long
-wlan_disconnect()
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_wlan_disconnect(void)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+long wlan_disconnect(void)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	long ret;
 	unsigned char *ptr;
@@ -532,10 +559,15 @@ wlan_disconnect()
 //
 //*****************************************************************************
 
-long
-wlan_ioctl_set_connection_policy(unsigned long should_connect_to_open_ap, 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_wlan_ioctl_set_connection_policy(unsigned long should_connect_to_open_ap,
                                  unsigned long ulShouldUseFastConnect,
                                  unsigned long ulUseProfiles)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+long wlan_ioctl_set_connection_policy(unsigned long should_connect_to_open_ap,
+                                        unsigned long ulShouldUseFastConnect,
+                                        unsigned long ulUseProfiles)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	long ret;
 	unsigned char *ptr;
@@ -569,13 +601,17 @@ wlan_ioctl_set_connection_policy(unsigned long should_connect_to_open_ap,
 //!  @param    ulSsidLen ssid length
 //!  @param    ucBssid   bssid  6 bytes
 //!  @param    ulPriority ulPriority profile priority. Lowest priority:0.
+//!			   Important Note: Smartconfig process (in unencrypted mode) 
+//!			   stores the profile internally with priority 1, so changing  
+//!			   priorities when adding new profiles should be done with extra care
 //!  @param    ulPairwiseCipher_Or_TxKeyLen  key length for WEP security
 //!  @param    ulGroupCipher_TxKeyIndex  key index
 //!  @param    ulKeyMgmt        KEY management 
 //!  @param    ucPf_OrKey       security key
 //!  @param    ulPassPhraseLen  security key length for WPA\WPA2
 //!
-//!  @return    On success, zero is returned. On error, -1 is returned        
+//!  @return    On success, index (1-7) of the stored profile is returned.         
+//!				On error, -1 is returned.
 //!
 //!  @brief     When auto start is enabled, the device connects to
 //!             station from the profiles table. Up to 7 profiles are supported. 
@@ -589,8 +625,8 @@ wlan_ioctl_set_connection_policy(unsigned long should_connect_to_open_ap,
 //*****************************************************************************
 
 #ifndef CC3000_TINY_DRIVER
-long
-wlan_add_profile(unsigned long ulSecType, 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_wlan_add_profile(unsigned long ulSecType,
 								 unsigned char* ucSsid,
 								 unsigned long ulSsidLen, 
 								 unsigned char *ucBssid,
@@ -600,6 +636,18 @@ wlan_add_profile(unsigned long ulSecType,
 								 unsigned long ulKeyMgmt,
 								 unsigned char* ucPf_OrKey,
 								 unsigned long ulPassPhraseLen)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+long wlan_add_profile(unsigned long ulSecType,
+                                        unsigned char* ucSsid,
+                                        unsigned long ulSsidLen,
+                                        unsigned char *ucBssid,
+                                        unsigned long ulPriority,
+                                        unsigned long ulPairwiseCipher_Or_TxKeyLen,
+                                        unsigned long ulGroupCipher_TxKeyIndex,
+                                        unsigned long ulKeyMgmt,
+                                        unsigned char* ucPf_OrKey,
+                                        unsigned long ulPassPhraseLen)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	unsigned short arg_len;
 	long ret;
@@ -711,8 +759,8 @@ wlan_add_profile(unsigned long ulSecType,
 	return(ret);
 }
 #else
-long
-wlan_add_profile(unsigned long ulSecType, 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_wlan_add_profile(unsigned long ulSecType,
 								 unsigned char* ucSsid,
 								 unsigned long ulSsidLen, 
 								 unsigned char *ucBssid,
@@ -722,6 +770,18 @@ wlan_add_profile(unsigned long ulSecType,
 								 unsigned long ulKeyMgmt,
 								 unsigned char* ucPf_OrKey,
 								 unsigned long ulPassPhraseLen)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+long wlan_add_profile(unsigned long ulSecType,
+                                        unsigned char* ucSsid,
+                                        unsigned long ulSsidLen,
+                                        unsigned char *ucBssid,
+                                        unsigned long ulPriority,
+                                        unsigned long ulPairwiseCipher_Or_TxKeyLen,
+                                        unsigned long ulGroupCipher_TxKeyIndex,
+                                        unsigned long ulKeyMgmt,
+                                        unsigned char* ucPf_OrKey,
+                                        unsigned long ulPassPhraseLen)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	return -1;
 }
@@ -743,8 +803,11 @@ wlan_add_profile(unsigned long ulSecType,
 //
 //*****************************************************************************
 
-long
-wlan_ioctl_del_profile(unsigned long ulIndex)
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_wlan_ioctl_del_profile(unsigned long ulIndex)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+long wlan_ioctl_del_profile(unsigned long ulIndex)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	long ret;
 	unsigned char *ptr;
@@ -802,9 +865,13 @@ wlan_ioctl_del_profile(unsigned long ulIndex)
 //*****************************************************************************
 
 #ifndef CC3000_TINY_DRIVER
-long
-wlan_ioctl_get_scan_results(unsigned long ulScanTimeout,
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_wlan_ioctl_get_scan_results(unsigned long ulScanTimeout,
                             unsigned char *ucResults)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+long wlan_ioctl_get_scan_results(unsigned long ulScanTimeout,
+                                   unsigned char *ucResults)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	unsigned char *ptr;
 	unsigned char *args;
@@ -864,14 +931,19 @@ wlan_ioctl_get_scan_results(unsigned long ulScanTimeout,
 //*****************************************************************************
 
 #ifndef CC3000_TINY_DRIVER
-long
-wlan_ioctl_set_scan_params(unsigned long uiEnable, unsigned long uiMinDwellTime,
-													 unsigned long uiMaxDwellTime,
-													 unsigned long uiNumOfProbeRequests,
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_wlan_ioctl_set_scan_params(unsigned long uiEnable, unsigned long uiMinDwellTime,
+                                  unsigned long uiMaxDwellTime, unsigned long uiNumOfProbeRequests,
 													 unsigned long uiChannelMask,long iRSSIThreshold,
-													 unsigned long uiSNRThreshold,
-													 unsigned long uiDefaultTxPower,
+                                  unsigned long uiSNRThreshold, unsigned long uiDefaultTxPower,
 													 unsigned long *aiIntervalList)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+long wlan_ioctl_set_scan_params(unsigned long uiEnable, unsigned long uiMinDwellTime,
+                                  unsigned long uiMaxDwellTime, unsigned long uiNumOfProbeRequests,
+                                  unsigned long uiChannelMask, long iRSSIThreshold,
+                                  unsigned long uiSNRThreshold, unsigned long uiDefaultTxPower,
+                                  unsigned long *aiIntervalList)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	unsigned long  uiRes;
 	unsigned char *ptr;
@@ -926,8 +998,11 @@ wlan_ioctl_set_scan_params(unsigned long uiEnable, unsigned long uiMinDwellTime,
 //
 //*****************************************************************************
 
-long
-wlan_set_event_mask(unsigned long ulMask)
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_wlan_set_event_mask(unsigned long ulMask)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+long wlan_set_event_mask(unsigned long ulMask)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	long ret;
 	unsigned char *ptr;
@@ -984,8 +1059,11 @@ wlan_set_event_mask(unsigned long ulMask)
 //*****************************************************************************
 
 #ifndef CC3000_TINY_DRIVER
-long
-wlan_ioctl_statusget(void)
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_wlan_ioctl_statusget(void)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+long wlan_ioctl_statusget(void)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	long ret;
 	unsigned char *ptr;
@@ -1024,8 +1102,11 @@ wlan_ioctl_statusget(void)
 //
 //*****************************************************************************
 
-long
-wlan_smart_config_start(unsigned long algoEncryptedFlag)
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_wlan_smart_config_start(unsigned long algoEncryptedFlag)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+long wlan_smart_config_start(unsigned long algoEncryptedFlag)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	long ret;
 	unsigned char *ptr;
@@ -1062,8 +1143,11 @@ wlan_smart_config_start(unsigned long algoEncryptedFlag)
 //
 //*****************************************************************************
 
-long
-wlan_smart_config_stop(void)
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_wlan_smart_config_stop(void)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+long wlan_smart_config_stop(void)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	long ret;
 	unsigned char *ptr;
@@ -1096,8 +1180,11 @@ wlan_smart_config_stop(void)
 //
 //*****************************************************************************
 
-long
-wlan_smart_config_set_prefix(char* cNewPrefix)
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_wlan_smart_config_set_prefix(char* cNewPrefix)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+long wlan_smart_config_set_prefix(char* cNewPrefix)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	long ret;
 	unsigned char *ptr;
@@ -1142,10 +1229,19 @@ wlan_smart_config_set_prefix(char* cNewPrefix)
 //
 //*****************************************************************************
 
+#ifndef __ENABLE_MULTITHREADED_SUPPORT__
+#define c_wlan_add_profile wlan_add_profile
+#define c_aes_read_key aes_read_key
+#define c_nvmem_read nvmem_read
+#define c_aes_decrypt aes_decrypt
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 #ifndef CC3000_UNENCRYPTED_SMART_CONFIG
-long
-wlan_smart_config_process()
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_wlan_smart_config_process()
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+long wlan_smart_config_process()
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	signed long	returnValue;
 	unsigned long ssidLen, keyLen;
@@ -1153,7 +1249,7 @@ wlan_smart_config_process()
 	unsigned char *ssidPtr;
 	
 	// read the key from EEPROM - fileID 12
-	returnValue = aes_read_key(key);
+    returnValue = c_aes_read_key(key);
 	
 	if (returnValue != 0)
 		return returnValue;
@@ -1167,7 +1263,7 @@ wlan_smart_config_process()
 	//	 to elaborate, there are two corner cases:
 	//		1) the KEY is 32 bytes long. In this case, the first byte does not represent KEY length
 	//		2) the KEY is 31 bytes long. In this case, the first byte represent KEY length and equals 31
-	returnValue = nvmem_read(NVMEM_SHARED_MEM_FILEID, SMART_CONFIG_PROFILE_SIZE, 0, profileArray);
+    returnValue = c_nvmem_read(NVMEM_SHARED_MEM_FILEID, SMART_CONFIG_PROFILE_SIZE, 0, profileArray);
 	
 	if (returnValue != 0)
 		return returnValue;
@@ -1178,9 +1274,9 @@ wlan_smart_config_process()
 	
 	decKeyPtr = &profileArray[profileArray[0] + 3];
 	
-	aes_decrypt(decKeyPtr, key);
+    c_aes_decrypt(decKeyPtr, key);
 	if (profileArray[profileArray[0] + 1] > 16)
-		aes_decrypt((unsigned char *)(decKeyPtr + 16), key);
+        c_aes_decrypt((unsigned char *)(decKeyPtr + 16), key);
 	
 	if (*(unsigned char *)(decKeyPtr +31) != 0)
 	{
@@ -1205,7 +1301,7 @@ wlan_smart_config_process()
 	{
 	case WLAN_SEC_UNSEC://None
 	 	{
-			returnValue = wlan_add_profile(profileArray[profileArray[0] + 2], 	// security type
+            returnValue = c_wlan_add_profile(profileArray[profileArray[0] + 2],     // security type
 																		 ssidPtr,		 					// SSID
 																		 ssidLen, 							// SSID length
 																		 NULL, 							// BSSID
@@ -1217,7 +1313,7 @@ wlan_smart_config_process()
 		
 	case WLAN_SEC_WEP://WEP
 		{
-			returnValue = wlan_add_profile(profileArray[profileArray[0] + 2], 	// security type
+            returnValue = c_wlan_add_profile(profileArray[profileArray[0] + 2],     // security type
 																		 ssidPtr, 							// SSID
 																		 ssidLen, 							// SSID length
 																		 NULL, 							// BSSID
@@ -1234,7 +1330,7 @@ wlan_smart_config_process()
 	case WLAN_SEC_WPA://WPA
 	case WLAN_SEC_WPA2://WPA2
 		{
-			returnValue = wlan_add_profile(WLAN_SEC_WPA2, 	// security type
+                returnValue = c_wlan_add_profile(profileArray[profileArray[0] + 2],     // security type
 																		 ssidPtr,
 																		 ssidLen,
 																		 NULL, 							// BSSID

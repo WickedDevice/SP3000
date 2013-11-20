@@ -93,3 +93,17 @@ int read_http_headers(uint32_t s)
 
   return 0;
 }
+
+int read_client_http_headers(uint32_t s)
+{
+  // First make sure there is data available, wait up to 5 seconds if necessary
+  if (!data_available(s, 5)) {
+    return -SENSE_ERR_TIMEOUT;
+  }
+  // Look for the end of the http headers.
+  // At the moment we're not really interested in what the client has to say
+  // about himself, so we just skip to the end
+  sp_http_skip_to (s, "\r\n\r\n");
+
+  return 0;
+}

@@ -45,6 +45,10 @@
 #include "security.hpp"
 
 #ifndef CC3000_UNENCRYPTED_SMART_CONFIG
+#ifndef __ENABLE_MULTITHREADED_SUPPORT__
+#define c_nvmem_read nvmem_read
+#define c_nvmem_write nvmem_write
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 // foreward sbox
 const unsigned char sbox[256] PROGMEM = { 
 //0     1    2      3     4    5     6     7      8    9     A      B    C     D     E     F
@@ -102,7 +106,7 @@ unsigned char expandedKey[176];
 //!
 //*****************************************************************************
 
-void expandKey(unsigned char *expandedKey,
+static void expandKey(unsigned char *expandedKey,
                unsigned char *key)
 {
   unsigned short ii, buf1;
@@ -142,7 +146,7 @@ void expandKey(unsigned char *expandedKey,
 //!
 //*****************************************************************************
 
-unsigned char galois_mul2(unsigned char value)
+static unsigned char galois_mul2(unsigned char value)
 {
 	if (value>>7)
 	{
@@ -176,7 +180,7 @@ unsigned char galois_mul2(unsigned char value)
 //!
 //*****************************************************************************
 
-void aes_encr(unsigned char *state, unsigned char *expandedKey)
+static void aes_encr(unsigned char *state, unsigned char *expandedKey)
 {
   unsigned char buf1, buf2, buf3, round;
 		
@@ -303,7 +307,7 @@ void aes_encr(unsigned char *state, unsigned char *expandedKey)
 //!
 //*****************************************************************************
 
-void aes_decr(unsigned char *state, unsigned char *expandedKey)
+static void aes_decr(unsigned char *state, unsigned char *expandedKey)
 {
   unsigned char buf1, buf2, buf3;
   signed char round;
@@ -445,9 +449,11 @@ void aes_decr(unsigned char *state, unsigned char *expandedKey)
 //!	 
 //!
 //*****************************************************************************
-
-void aes_encrypt(unsigned char *state,
-                 unsigned char *key)
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+void c_aes_encrypt(unsigned char *state, unsigned char *key)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+void aes_encrypt(unsigned char *state, unsigned char *key)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	// expand the key into 176 bytes
 	expandKey(expandedKey, key);       
@@ -470,9 +476,11 @@ void aes_encrypt(unsigned char *state,
 //!	 
 //!
 //*****************************************************************************
-
-void aes_decrypt(unsigned char *state,
-                 unsigned char *key)
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+void c_aes_decrypt(unsigned char *state, unsigned char *key)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+void aes_decrypt(unsigned char *state, unsigned char *key)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
     expandKey(expandedKey, key);       // expand the key into 176 bytes
     aes_decr(state, expandedKey);
@@ -492,13 +500,14 @@ void aes_decrypt(unsigned char *state,
 //!	 
 //!
 //*****************************************************************************
-
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+signed long c_aes_read_key(unsigned char *key)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 signed long aes_read_key(unsigned char *key)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	signed long	returnValue;
-	
-	returnValue = nvmem_read(NVMEM_AES128_KEY_FILEID, AES128_KEY_SIZE, 0, key);
-
+    returnValue = c_nvmem_read(NVMEM_AES128_KEY_FILEID, AES128_KEY_SIZE, 0, key);
 	return returnValue;
 }
 
@@ -516,12 +525,14 @@ signed long aes_read_key(unsigned char *key)
 //!
 //*****************************************************************************
 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+signed long c_aes_write_key(unsigned char *key)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 signed long aes_write_key(unsigned char *key)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	signed long	returnValue;
-
-	returnValue = nvmem_write(NVMEM_AES128_KEY_FILEID, AES128_KEY_SIZE, 0, key);
-
+    returnValue = c_nvmem_write(NVMEM_AES128_KEY_FILEID, AES128_KEY_SIZE, 0, key);
 	return returnValue;
 }
 

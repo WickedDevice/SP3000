@@ -16,5 +16,6 @@ enum http_status {
 };
 
 int read_http_headers(uint32_t s);
+int read_client_http_headers(uint32_t);
 
 #endif /* HTTP_HPP_ */

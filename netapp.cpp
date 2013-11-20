@@ -54,6 +54,9 @@
 #define NETAPP_SET_DEBUG_LEVEL_PARAMS_LEN	(4)
 #define NETAPP_PING_SEND_PARAMS_LEN			(16)
 
+#ifndef __ENABLE_MULTITHREADED_SUPPORT__
+#define c_nvmem_set_mac_address nvmem_set_mac_address
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -69,9 +72,13 @@
 //!                over resets.
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long  c_netapp_config_mac_adrress( unsigned char *mac )
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 long netapp_config_mac_adrress(unsigned char * mac)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
-	return  nvmem_set_mac_address(mac);
+   return  c_nvmem_set_mac_address(mac);
 }
 
 //*****************************************************************************
@@ -100,8 +107,13 @@ long netapp_config_mac_adrress(unsigned char * mac)
 //!               AP was established. 
 //!
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_netapp_dhcp(unsigned long *aucIP, unsigned long *aucSubnetMask,
+                           unsigned long *aucDefaultGateway, unsigned long *aucDNSServer)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 long netapp_dhcp(unsigned long *aucIP, unsigned long *aucSubnetMask,
     unsigned long *aucDefaultGateway, unsigned long *aucDNSServer)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	signed char scRet;
 	unsigned char *ptr;
@@ -179,9 +191,13 @@ long netapp_dhcp(unsigned long *aucIP, unsigned long *aucSubnetMask,
 //*****************************************************************************
 
 #ifndef CC3000_TINY_DRIVER
-long
-netapp_timeout_values(unsigned long *aucDHCP, unsigned long *aucARP,
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_netapp_timeout_values(unsigned long *aucDHCP, unsigned long *aucARP,
     unsigned long *aucKeepalive,	unsigned long *aucInactivity)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+long netapp_timeout_values(unsigned long *aucDHCP, unsigned long *aucARP,
+                        unsigned long *aucKeepalive, unsigned long *aucInactivity)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	signed char scRet;
 	unsigned char *ptr;
@@ -236,9 +252,13 @@ netapp_timeout_values(unsigned long *aucDHCP, unsigned long *aucARP,
 //*****************************************************************************
 
 #ifndef CC3000_TINY_DRIVER
-long
-netapp_ping_send(unsigned long *ip, unsigned long ulPingAttempts,
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_netapp_ping_send(unsigned long *ip, unsigned long ulPingAttempts,
     unsigned long ulPingSize, unsigned long ulPingTimeout)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+long netapp_ping_send(unsigned long *ip, unsigned long ulPingAttempts,
+                   unsigned long ulPingSize, unsigned long ulPingTimeout)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	signed char scRet;
 	unsigned char *ptr, *args;
@@ -288,7 +308,11 @@ netapp_ping_send(unsigned long *ip, unsigned long ulPingAttempts,
 
 
 #ifndef CC3000_TINY_DRIVER
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+void c_netapp_ping_report()
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 void netapp_ping_report()
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	unsigned char *ptr;
 	ptr = tSLInformation.pucTxCommandBuffer;
@@ -318,7 +342,11 @@ void netapp_ping_report()
 //*****************************************************************************
 
 #ifndef CC3000_TINY_DRIVER
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_netapp_ping_stop()
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 long netapp_ping_stop()
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	signed char scRet;
 	unsigned char *ptr;
@@ -363,7 +391,11 @@ long netapp_ping_stop()
 //*****************************************************************************
 
 #ifndef CC3000_TINY_DRIVER
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+void c_netapp_ipconfig( tNetappIpconfigRetArgs * ipconfig )
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 void netapp_ipconfig( tNetappIpconfigRetArgs * ipconfig )
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	unsigned char *ptr;
 	
@@ -377,7 +409,11 @@ void netapp_ipconfig( tNetappIpconfigRetArgs * ipconfig )
 	
 }
 #else
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+void c_netapp_ipconfig( tNetappIpconfigRetArgs * ipconfig )
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 void netapp_ipconfig( tNetappIpconfigRetArgs * ipconfig )
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 
 }
@@ -396,7 +432,11 @@ void netapp_ipconfig( tNetappIpconfigRetArgs * ipconfig )
 //*****************************************************************************
 
 #ifndef CC3000_TINY_DRIVER
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_netapp_arp_flush(void)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 long netapp_arp_flush(void)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	signed char scRet;
 	unsigned char *ptr;
@@ -434,7 +474,11 @@ long netapp_arp_flush(void)
 
 
 #ifndef CC3000_TINY_DRIVER
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+long c_netapp_set_debug_level(unsigned long ulLevel)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 long netapp_set_debug_level(unsigned long ulLevel)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	signed char scRet;
     unsigned char *ptr, *args;

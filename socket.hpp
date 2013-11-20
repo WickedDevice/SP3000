@@ -35,7 +35,7 @@
 #ifndef __SOCKET_H__
 #define __SOCKET_H__
 
-
+#include "cc3000_common.hpp"
 //*****************************************************************************
 //
 //! \addtogroup socket_api
@@ -53,143 +53,6 @@
 #ifdef  __cplusplus
 extern "C" {
 #endif
-
-#define HOSTNAME_MAX_LENGTH (230)  // 230 bytes + header shouldn't exceed 8 bit value
-
-//--------- Address Families --------
-
-#define  AF_INET                2
-#define  AF_INET6               23
-
-//------------ Socket Types ------------
-
-#define  SOCK_STREAM            1
-#define  SOCK_DGRAM             2
-#define  SOCK_RAW               3           // Raw sockets allow new IPv4 protocols to be implemented in user space. A raw socket receives or sends the raw datagram not including link level headers
-#define  SOCK_RDM               4
-#define  SOCK_SEQPACKET         5
-
-//----------- Socket Protocol ----------
-
-#define IPPROTO_IP              0           // dummy for IP
-#define IPPROTO_ICMP            1           // control message protocol
-#define IPPROTO_IPV4            IPPROTO_IP  // IP inside IP
-#define IPPROTO_TCP             6           // tcp
-#define IPPROTO_UDP             17          // user datagram protocol
-#define IPPROTO_IPV6            41          // IPv6 in IPv6
-#define IPPROTO_NONE            59          // No next header
-#define IPPROTO_RAW             255         // raw IP packet
-#define IPPROTO_MAX             256
-
-//----------- Socket retunr codes  -----------
-
-#define SOC_ERROR				(-1)		// error 
-#define SOC_IN_PROGRESS			(-2)		// socket in progress
-
-//----------- Socket Options -----------
-#define  SOL_SOCKET             0xffff		//  socket level
-#define  SOCKOPT_RECV_NONBLOCK         	0	// recv non block mode, set SOCK_ON or SOCK_OFF (default block mode)
-#define  SOCKOPT_RECV_TIMEOUT			1	// optname to configure recv and recvfromtimeout
-#define  SOCKOPT_ACCEPT_NONBLOCK		2	// accept non block mode, set SOCK_ON or SOCK_OFF (default block mode)
-#define  SOCK_ON                0			// socket non-blocking mode	is enabled		
-#define  SOCK_OFF               1			// socket blocking mode is enabled
-
-#define  TCP_NODELAY            0x0001
-#define  TCP_BSDURGENT          0x7000
-
-#define  MAX_PACKET_SIZE        1500
-#define  MAX_LISTEN_QUEUE       4
-
-#define  IOCTL_SOCKET_EVENTMASK
-
-#define ENOBUFS                 55          // No buffer space available
-
-#define __FD_SETSIZE            32
-
-#define  ASIC_ADDR_LEN          8
-	
-#define NO_QUERY_RECIVED        -3
-	
-	
-typedef struct _in_addr_t
-{
-    unsigned long s_addr;                   // load with inet_aton()
-} in_addr;
-
-typedef struct _sockaddr_t
-{
-    unsigned short int    sa_family;
-    unsigned char     sa_data[14];
-} sockaddr;
-
-typedef struct _sockaddr_in_t
-{
-    short            sin_family;            // e.g. AF_INET
-    unsigned short   sin_port;              // e.g. htons(3490)
-    in_addr          sin_addr;              // see struct in_addr, below
-    char             sin_zero[8];           // zero this if you want to
-} sockaddr_in;
-
-typedef unsigned long socklen_t;
-
-// The fd_set member is required to be an array of longs.
-typedef long int __fd_mask;
-
-// It's easier to assume 8-bit bytes than to get CHAR_BIT.
-#define __NFDBITS               (8 * sizeof (__fd_mask))
-#define __FDELT(d)              ((d) / __NFDBITS)
-#define __FDMASK(d)             ((__fd_mask) 1 << ((d) % __NFDBITS))
-
-// fd_set for select and pselect.
-typedef struct
-{
-    __fd_mask fds_bits[__FD_SETSIZE / __NFDBITS];
-#define __FDS_BITS(set)        ((set)->fds_bits)
-} fd_set;
-
-// We don't use `memset' because this would require a prototype and
-//   the array isn't too big.
-#define __FD_ZERO(set)                               \
-  do {                                                \
-    unsigned int __i;                                 \
-    fd_set *__arr = (set);                            \
-    for (__i = 0; __i < sizeof (fd_set) / sizeof (__fd_mask); ++__i) \
-      __FDS_BITS (__arr)[__i] = 0;                    \
-  } while (0)
-#define __FD_SET(d, set)       (__FDS_BITS (set)[__FDELT (d)] |= __FDMASK (d))
-#define __FD_CLR(d, set)       (__FDS_BITS (set)[__FDELT (d)] &= ~__FDMASK (d))
-#define __FD_ISSET(d, set)     (__FDS_BITS (set)[__FDELT (d)] & __FDMASK (d))
-
-// Access macros for 'fd_set'.
-#define FD_SET(fd, fdsetp)      __FD_SET (fd, fdsetp)
-#define FD_CLR(fd, fdsetp)      __FD_CLR (fd, fdsetp)
-#define FD_ISSET(fd, fdsetp)    __FD_ISSET (fd, fdsetp)
-#define FD_ZERO(fdsetp)         __FD_ZERO (fdsetp)
-
-//Use in case of Big Endian only
-  
-#define htonl(A)    ((((unsigned long)(A) & 0xff000000) >> 24) | \
-                     (((unsigned long)(A) & 0x00ff0000) >> 8) | \
-                     (((unsigned long)(A) & 0x0000ff00) << 8) | \
-                     (((unsigned long)(A) & 0x000000ff) << 24))
-
-#define ntohl                   htonl
-
-//Use in case of Big Endian only
-#define htons(A)     ((((unsigned long)(A) & 0xff00) >> 8) | \
-                      (((unsigned long)(A) & 0x00ff) << 8))
-
-
-#define ntohs                   htons
-
-// mDNS port - 5353    mDNS multicast address - 224.0.0.251 
-#define SET_mDNS_ADD(sockaddr)     	   	sockaddr.sa_data[0] = 0x14; \
-																								sockaddr.sa_data[1] = 0xe9; \
-																								sockaddr.sa_data[2] = 0xe0; \
-																								sockaddr.sa_data[3] = 0x0; \
-																								sockaddr.sa_data[4] = 0x0; \
-																								sockaddr.sa_data[5] = 0xfb; 
-
 
 //*****************************************************************************
 //
@@ -218,7 +81,11 @@ typedef struct
 //!          application layer to obtain a socket handle.
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern int c_socket(long domain, long type, long protocol);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern int socket(long domain, long type, long protocol);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -231,7 +98,11 @@ extern int socket(long domain, long type, long protocol);
 //!  @brief  The socket function closes a created socket.
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern long c_closesocket(long sd);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern long closesocket(long sd);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -277,7 +148,11 @@ extern long closesocket(long sd);
 //! @sa     socket ; bind ; listen
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern long c_accept(long sd, sockaddr *addr, socklen_t *addrlen);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern long accept(long sd, sockaddr *addr, socklen_t *addrlen);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -301,7 +176,11 @@ extern long accept(long sd, sockaddr *addr, socklen_t *addrlen);
 //! @sa     socket ; accept ; listen
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern long c_bind(long sd, const sockaddr *addr, long addrlen);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern long bind(long sd, const sockaddr *addr, long addrlen);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -325,7 +204,11 @@ extern long bind(long sd, const sockaddr *addr, long addrlen);
 //! @note   On this version, backlog is not supported
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern long c_listen(long sd, long backlog);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern long listen(long sd, long backlog);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -345,9 +228,15 @@ extern long listen(long sd, long backlog);
 //!		     the function requires DNS server to be configured prior to its usage.
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+#ifndef CC3000_TINY_DRIVER
+extern int c_gethostbyname(char * hostname, unsigned short usNameLen, unsigned long* out_ip_addr);
+#endif
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 #ifndef CC3000_TINY_DRIVER 
 extern int gethostbyname(char * hostname, unsigned short usNameLen, unsigned long* out_ip_addr);
 #endif
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 
 //*****************************************************************************
@@ -378,7 +267,11 @@ extern int gethostbyname(char * hostname, unsigned short usNameLen, unsigned lon
 //!  @sa socket
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern long c_connect(long sd, const sockaddr *addr, long addrlen);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern long connect(long sd, const sockaddr *addr, long addrlen);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -417,8 +310,13 @@ extern long connect(long sd, const sockaddr *addr, long addrlen);
 //!  @sa socket
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern int c_select(long nfds, fd_set *readsds, fd_set *writesds,
+                    fd_set *exceptsds, struct timeval *timeout);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern int select(long nfds, fd_set *readsds, fd_set *writesds,
                   fd_set *exceptsds, struct timeval *timeout);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -466,10 +364,17 @@ extern int select(long nfds, fd_set *readsds, fd_set *writesds,
 //!  @sa getsockopt
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+#ifndef CC3000_TINY_DRIVER
+extern int c_setsockopt(long sd, long level, long optname, const void *optval,
+                      socklen_t optlen);
+#endif
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 #ifndef CC3000_TINY_DRIVER 
 extern int setsockopt(long sd, long level, long optname, const void *optval,
                       socklen_t optlen);
 #endif
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 //*****************************************************************************
 //
 //! getsockopt
@@ -516,8 +421,13 @@ extern int setsockopt(long sd, long level, long optname, const void *optval,
 //!  @sa setsockopt
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern int c_getsockopt(long sd, long level, long optname, void *optval,
+                         socklen_t *optlen);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern int getsockopt(long sd, long level, long optname, void *optval,
                       socklen_t *optlen);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -540,8 +450,12 @@ extern int getsockopt(long sd, long level, long optname, void *optval,
 //!  @Note On this version, only blocking mode is supported.
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern int c_recv(long sd, void *buf, long len, long flags);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern int recv(long sd, void *buf, long len, long flags);
 
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 //*****************************************************************************
 //
 //!  recvfrom
@@ -570,8 +484,13 @@ extern int recv(long sd, void *buf, long len, long flags);
 //!  @Note On this version, only blocking mode is supported.
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern int c_recvfrom(long sd, void *buf, long len, long flags, sockaddr *from,
+                      socklen_t *fromlen);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern int recvfrom(long sd, void *buf, long len, long flags, sockaddr *from, 
                     socklen_t *fromlen);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -595,7 +514,11 @@ extern int recvfrom(long sd, void *buf, long len, long flags, sockaddr *from,
 //
 //*****************************************************************************
 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern int c_send(long sd, const void *buf, long len, long flags);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern int send(long sd, const void *buf, long len, long flags);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -623,8 +546,13 @@ extern int send(long sd, const void *buf, long len, long flags);
 //
 //*****************************************************************************
 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern int c_sendto(long sd, const void *buf, long len, long flags,
+                  const sockaddr *to, socklen_t tolen);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern int sendto(long sd, const void *buf, long len, long flags, 
                   const sockaddr *to, socklen_t tolen);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -642,7 +570,11 @@ extern int sendto(long sd, const void *buf, long len, long flags,
 //!  @brief    Set CC3000 in mDNS advertiser mode in order to advertise itself.
 //
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern int c_mdnsAdvertiser(unsigned short mdnsEnabled, char * deviceServiceName, unsigned short deviceServiceNameLength);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern int mdnsAdvertiser(unsigned short mdnsEnabled, char * deviceServiceName, unsigned short deviceServiceNameLength);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //

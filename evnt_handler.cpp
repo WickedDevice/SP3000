@@ -351,7 +351,7 @@ hci_event_handler(void *pRetParams, unsigned char *from, unsigned char *fromlen)
 							pRetParams = ((char *)pRetParams) + 4;
 							STREAM_TO_UINT32((char *)pucReceivedParams,SL_RECEIVE__FLAGS__OFFSET,*(unsigned long *)pRetParams);							
 							// TODO: Check this against the original code
-							tBsdReadReturnParams *tread = (tBsdReadReturnParams *)pRetParams;
+							//tBsdReadReturnParams *tread = (tBsdReadReturnParams *)pRetParams;
 							if(((tBsdReadReturnParams *)pRetParams)->iNumberOfBytes == ERROR_SOCKET_INACTIVE)
 							{
 								set_socket_active_status(((tBsdReadReturnParams *)pRetParams)->iSocketDescriptor,SOCKET_STATUS_INACTIVE);
@@ -619,33 +619,33 @@ hci_unsol_event_handler(char *event_hdr)
 	if ((event_type == HCI_EVNT_SEND) || (event_type == HCI_EVNT_SENDTO)
 			|| (event_type == HCI_EVNT_WRITE))
 	{
-                char *pArg;
-                long status;
-                
-                pArg = M_BSD_RESP_PARAMS_OFFSET(event_hdr);
-                STREAM_TO_UINT32(pArg, BSD_RSP_PARAMS_STATUS_OFFSET,status);
-                
+    char *pArg;
+    long status;
 
-                // TODO: Temporary fix until TI can confirm what the problem
-                // really is.
-//                if (ERROR_SOCKET_INACTIVE == status || -1 == status)
-                if (0 > status)
-                {
-                    // The only synchronous event that can come from SL device in form of 
-                    // command complete is "Command Complete" on data sent, in case SL device 
-                    // was unable to transmit
-                    STREAM_TO_UINT8(event_hdr, HCI_EVENT_STATUS_OFFSET, tSLInformation.slTransmitDataError);
-                    update_socket_active_status(M_BSD_RESP_PARAMS_OFFSET(event_hdr));
-                    
-                    return (1);
-                }
-                else {
-                    return (0);
-                }
+    pArg = M_BSD_RESP_PARAMS_OFFSET(event_hdr);
+    STREAM_TO_UINT32(pArg, BSD_RSP_PARAMS_STATUS_OFFSET,status);
+
+
+    // TODO: Temporary fix until TI can confirm what the problem
+    // really is.
+    // if (ERROR_SOCKET_INACTIVE == status || -1 == status)
+    if (0 > status)
+    {
+      // The only synchronous event that can come from SL device in form of
+      // command complete is "Command Complete" on data sent, in case SL device
+      // was unable to transmit
+      STREAM_TO_UINT8(event_hdr, HCI_EVENT_STATUS_OFFSET, tSLInformation.slTransmitDataError);
+      update_socket_active_status(M_BSD_RESP_PARAMS_OFFSET(event_hdr));
+      return (1);
+    } else {
+        return (0);
+    }
 	}
 	
-	//handle a case where unsolicited event arrived, but was not handled by any of the cases above
-	if ((event_type != tSLInformation.usRxEventOpcode) && (event_type != HCI_EVNT_PATCHES_REQ))	{
+	// handle a case where unsolicited event arrived, but was not handled by any
+	// of the cases above
+	if ((event_type != tSLInformation.usRxEventOpcode) &&
+	    (event_type != HCI_EVNT_PATCHES_REQ))	{
 	  return(1);
 	}
 

@@ -60,6 +60,10 @@
 #define NVMEM_CREATE_PARAMS_LEN 	(8)
 #define NVMEM_WRITE_PARAMS_LEN  (16)
 
+#ifndef __ENABLE_MULTITHREADED_SUPPORT__
+#define c_nvmem_write nvmem_write
+#define c_nvmem_read nvmem_read
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 //*****************************************************************************
 //
 //!  nvmem_read
@@ -84,9 +88,13 @@
 //!	 
 //*****************************************************************************
 
-signed long 
-nvmem_read(unsigned long ulFileId, unsigned long ulLength,
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+signed long c_nvmem_read(unsigned long ulFileId, unsigned long ulLength,
     unsigned long ulOffset, unsigned char *buff)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+signed long nvmem_read(unsigned long ulFileId, unsigned long ulLength,
+                                unsigned long ulOffset, unsigned char *buff)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	unsigned char ucStatus = 0xFF;
 	unsigned char *ptr;
@@ -112,8 +120,7 @@ nvmem_read(unsigned long ulFileId, unsigned long ulLength,
 	// big enough to store also parameters of nvmem
 	
 	SimpleLinkWaitData(buff, 0, 0);
- 	return(ucStatus);
-	
+ 	return(ucStatus);	
 }
 
 //*****************************************************************************
@@ -138,9 +145,11 @@ nvmem_read(unsigned long ulFileId, unsigned long ulLength,
 //!	 
 //*****************************************************************************
 
-signed long 
-nvmem_write(unsigned long ulFileId, unsigned long ulLength, unsigned long 
-						ulEntryOffset, unsigned char *buff)
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+signed long c_nvmem_write(unsigned long ulFileId, unsigned long ulLength, unsigned long ulEntryOffset, unsigned char *buff)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+signed long nvmem_write(unsigned long ulFileId, unsigned long ulLength, unsigned long ulEntryOffset, unsigned char *buff)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	long iRes;
 	unsigned char *ptr;
@@ -183,9 +192,13 @@ nvmem_write(unsigned long ulFileId, unsigned long ulLength, unsigned long
 //!	 
 //*****************************************************************************
 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+unsigned char c_nvmem_set_mac_address(unsigned char *mac)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 unsigned char nvmem_set_mac_address(unsigned char *mac)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
-	return  nvmem_write(NVMEM_MAC_FILEID, MAC_ADDR_LEN, 0, mac);
+    return  c_nvmem_write(NVMEM_MAC_FILEID, MAC_ADDR_LEN, 0, mac);
 }
 
 //*****************************************************************************
@@ -201,9 +214,13 @@ unsigned char nvmem_set_mac_address(unsigned char *mac)
 //!	 
 //*****************************************************************************
 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+unsigned char c_nvmem_get_mac_address(unsigned char *mac)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 unsigned char nvmem_get_mac_address(unsigned char *mac)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
-	return  nvmem_read(NVMEM_MAC_FILEID, MAC_ADDR_LEN, 0, mac);
+    return  c_nvmem_read(NVMEM_MAC_FILEID, MAC_ADDR_LEN, 0, mac);
 }
 
 //*****************************************************************************
@@ -224,7 +241,13 @@ unsigned char nvmem_get_mac_address(unsigned char *mac)
 //!	 
 //*****************************************************************************
 
-unsigned char nvmem_write_patch(unsigned long ulFileId, unsigned long spLength, const unsigned char *spData)
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+unsigned char c_nvmem_write_patch(unsigned long ulFileId, unsigned long spLength,
+                                          const unsigned char *spData)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+unsigned char nvmem_write_patch(unsigned long ulFileId, unsigned long spLength,
+                                          const unsigned char *spData)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	unsigned char 	status = 0;
 	unsigned short	offset = 0;
@@ -273,7 +296,11 @@ unsigned char nvmem_write_patch(unsigned long ulFileId, unsigned long spLength, 
 //*****************************************************************************
 
 #ifndef CC3000_TINY_DRIVER
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+unsigned char c_nvmem_read_sp_version(unsigned char* patchVer)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 unsigned char nvmem_read_sp_version(unsigned char* patchVer)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	unsigned char *ptr;
 	// 1st byte is the status and the rest is the SP version
@@ -317,8 +344,11 @@ unsigned char nvmem_read_sp_version(unsigned char* patchVer)
 //!	 
 //*****************************************************************************
 
-signed long 
-nvmem_create_entry(unsigned long ulFileId, unsigned long ulNewLen)
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+signed long c_nvmem_create_entry(unsigned long ulFileId, unsigned long ulNewLen)
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+signed long nvmem_create_entry(unsigned long ulFileId, unsigned long ulNewLen)
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 {
 	unsigned char *ptr; 
 	unsigned char *args;

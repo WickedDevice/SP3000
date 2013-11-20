@@ -17,6 +17,10 @@
                             (uint32_t)((uint32_t)b << 16) | \
                             (uint32_t)((uint32_t)c << 8) | (uint32_t)d)
 
+#define rpackIP(a,b,c,d)  ((uint32_t)((uint32_t)d << 24) | \
+                            (uint32_t)((uint32_t)c << 16) | \
+                            (uint32_t)((uint32_t)b << 8) | (uint32_t)a)
+
 enum sp_connection_policies {
   SP_CONNECT_TO_OPEN_AP = 0x01,
   SP_FAST_CONNECT = 0x02,
@@ -34,9 +38,10 @@ int sp_send (uint32_t s, char *str);
 uint8_t data_available(int16_t s);
 uint8_t data_available(int16_t s, uint16_t time);
 uint8_t sp_read(int16_t s);
+int sp_read_line (int16_t s, char *output, int len);
 uint8_t sp_peek(int16_t s);
 void scan_ssid(uint32_t time);
-char do_smart_config(void);
+char sp_smart_config(void);
 void sp_set_connection_policy (byte policy);
 
 

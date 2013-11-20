@@ -110,6 +110,10 @@ int sp_send (uint32_t s, char *str)
   int ret;
 
   PRINTLN (F("Entered send_c"));
+
+  if (s < 0)
+    return -1;
+
   while (1) {
     if (!str[i])
       break;
@@ -141,6 +145,10 @@ int sp_send (uint32_t s, long value)
   int ret
 
   PRINTLN (F("Entered send_l"));
+
+  if (s < 0)
+    return -1;
+
   ltoa (value, (char *)txbuf, 10);
   i = strlen((char*)txbuf);
 
@@ -164,6 +172,9 @@ int sp_send (uint32_t s, const __FlashStringHelper *string)
   int ret;
 
   PRINTLN (F("Entered send_F"));
+
+  if (s < 0)
+    return -1;
 
   const char PROGMEM *p = (const char PROGMEM *) string;
   while (1) {
@@ -219,11 +230,44 @@ uint8_t sp_read(int16_t s)
   uint8_t c;
 
   PRINTLN (F("Entered sp_read"));
+
   c = sp_peek(s);
   rx_ptr++;
 
   PRINTLN (F("Leaving sp_read"));
   return c;
+}
+
+//*****************************************************************************
+//*
+//* Description:
+//*   Reads a line from the incoming socket
+//*
+//*****************************************************************************
+int sp_read_line (int16_t s, char *output, int len)
+{
+  char c;
+  int cnt = 0;
+
+  PRINTLN (F("Entered sp_read_line"));
+
+  if (s < 0)
+    return -1;
+
+  while (data_available(s) && len--) {
+    c = sp_read (s);
+    if ((c == '\n') || (c == 0)) {
+      *output = 0;
+      return cnt;
+    }
+    *output++ = c;
+    cnt++;
+  }
+  if (!len)
+    return cnt;
+
+  // We only end up here if we ran out of data to soon.
+  return -1;
 }
 
 //*****************************************************************************
@@ -298,7 +342,7 @@ void scan_ssid(uint32_t time)
 //*   Performs a smart config sequence
 //*
 //*****************************************************************************
-char do_smart_config(void)
+char sp_smart_config(void)
 {
   long rval;
   long timeoutCounter;

@@ -105,7 +105,13 @@ extern "C" {
 //!	 
 //*****************************************************************************
 
-extern signed long nvmem_read(unsigned long file_id, unsigned long length, unsigned long offset, unsigned char *buff);
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern signed long c_nvmem_read(unsigned long ulFileId, unsigned long ulLength,
+                                unsigned long ulOffset, unsigned char *buff);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+extern signed long nvmem_read(unsigned long ulFileId, unsigned long ulLength,
+                                unsigned long ulOffset, unsigned char *buff);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -129,7 +135,11 @@ extern signed long nvmem_read(unsigned long file_id, unsigned long length, unsig
 //!	 
 //*****************************************************************************
 
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern signed long c_nvmem_write(unsigned long ulFileId, unsigned long ulLength, unsigned long ulEntryOffset, unsigned char *buff);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern signed long nvmem_write(unsigned long ulFileId, unsigned long ulLength, unsigned long ulEntryOffset, unsigned char *buff);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 
 //*****************************************************************************
@@ -144,8 +154,12 @@ extern signed long nvmem_write(unsigned long ulFileId, unsigned long ulLength, u
 //!               mac address as appears over the air (OUI first)
 //!	 
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern  unsigned char c_nvmem_set_mac_address(unsigned char *mac);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern	unsigned char nvmem_set_mac_address(unsigned char *mac);
 
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -159,7 +173,11 @@ extern	unsigned char nvmem_set_mac_address(unsigned char *mac);
 //!               mac address as appears over the air (OUI first)
 //!	 
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern  unsigned char c_nvmem_get_mac_address(unsigned char *mac);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern	unsigned char nvmem_get_mac_address(unsigned char *mac);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 
 //*****************************************************************************
@@ -179,7 +197,13 @@ extern	unsigned char nvmem_get_mac_address(unsigned char *mac);
 //!              applied in SP_PORTION_SIZE bytes portions.
 //!	 
 //*****************************************************************************
-extern	unsigned char nvmem_write_patch(unsigned long ulFileId, unsigned long spLength, const unsigned char *spData);
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern  unsigned char c_nvmem_write_patch(unsigned long ulFileId, unsigned long spLength,
+                                          const unsigned char *spData);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
+extern  unsigned char nvmem_write_patch(unsigned long ulFileId, unsigned long spLength,
+                                          const unsigned char *spData);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 
 //*****************************************************************************
@@ -195,9 +219,15 @@ extern	unsigned char nvmem_write_patch(unsigned long ulFileId, unsigned long spL
 //!              driver-supplicant-NS patch, bootloader patch)
 //!	 
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+#ifndef CC3000_TINY_DRIVER
+extern  unsigned char c_nvmem_read_sp_version(unsigned char* patchVer);
+#endif
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 #ifndef CC3000_TINY_DRIVER 
 extern	unsigned char nvmem_read_sp_version(unsigned char* patchVer);
 #endif
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 //*****************************************************************************
 //
@@ -221,7 +251,11 @@ extern	unsigned char nvmem_read_sp_version(unsigned char* patchVer);
 //!              set ulNewLen=0.
 //!	 
 //*****************************************************************************
+#ifdef __ENABLE_MULTITHREADED_SUPPORT__
+extern signed long c_nvmem_create_entry(unsigned long file_id, unsigned long newlen);
+#else /* __ENABLE_MULTITHREADED_SUPPORT__ */
 extern signed long nvmem_create_entry(unsigned long file_id, unsigned long newlen);
+#endif /* __ENABLE_MULTITHREADED_SUPPORT__ */
 
 
 //*****************************************************************************
