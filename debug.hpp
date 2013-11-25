@@ -40,7 +40,7 @@
 #define DEBUG_HPP_
 
 // Define the serial channel for your debug prints
-#define lSer      Serial2
+#define lSer      Serial
 
 //#define DEBUG
 #ifdef DEBUG

@@ -32,7 +32,11 @@
  * You can override the internal settings of the buffer size used here by
  * setting the desired size here
  */
-#define OVERRIDE_BUFFER_SIZE    1500
+#if defined(__AVR_ATmega32U4__)
+#define OVERRIDE_BUFFER_SIZE     256   // For the LeoFi
+#else
+#define OVERRIDE_BUFFER_SIZE    1519
+#endif
 
 /*
  * If you are using the Sweet Pea WiFi shield, you can enable or disable the
