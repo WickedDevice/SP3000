@@ -349,17 +349,19 @@ uint8_t data_available(int16_t s)
 //*
 //*****************************************************************************
 #ifndef CC3000_TINY_DRIVER
-void scan_ssid(uint32_t time)
+int sp_scan_ssid(uint32_t time)
 {
+  int ret;
   const unsigned long intervalTime[16] = { 2000, 2000, 2000, 2000, 2000, 2000,
       2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000, 2000 };
 
   PRINTLN (F("Entered scanSSIDs"));
 
-  wlan_ioctl_set_scan_params(time, 20, 100, 5, 0x7FF, -120, 0, 300,
+  ret = wlan_ioctl_set_scan_params(time, 20, 100, 5, 0x7FF, -120, 0, 300,
       (unsigned long *) &intervalTime);
 
   PRINTLN (F("Leaving scanSSIDs"));
+  return ret;
 }
 #endif
 
@@ -369,9 +371,9 @@ void scan_ssid(uint32_t time)
 //*   Performs a smart config sequence
 //*
 //*****************************************************************************
-char sp_smart_config(void)
+int sp_smart_config(void)
 {
-  long rval;
+  int rval;
   long timeoutCounter;
 
   PRINTLN (F("Entered do_smart_config"));
@@ -379,29 +381,28 @@ char sp_smart_config(void)
   PRINTLN (F("Disabling auto-connect policy."));
   if ((rval = wlan_ioctl_set_connection_policy(0, 0, 0)) != 0) {
     PRINT (F("Setting auto connection policy failed, error: ")); PRINTLN (rval);
-    return -1;
+    return rval;
   }
 
   PRINTLN (F("Deleting all existing profiles."));
   if ((rval = wlan_ioctl_del_profile(255)) != 0) {
     PRINT (F("Deleting all profiles failed, error: ")); PRINTLN (rval);
-    return -1;
+    return rval;
   }
 
   PRINTLN (F("Waiting until disconnected..."));
-  while (ulCC3000Connected == 1)
-    ;
+  while (ulCC3000Connected == 1);
 
   PRINTLN (F("Setting smart config prefix."));
   if ((rval = wlan_smart_config_set_prefix(simpleConfigPrefix)) != 0) {
     PRINT (F("Setting smart config prefix failed, error: ")); PRINTLN (rval);
-    return -1;
+    return rval;
   }
 
   PRINTLN (F("Starting smart config !"));
   if ((rval = wlan_smart_config_start(0)) != 0) {
     PRINT (F("Starting smart config failed, error: ")); PRINTLN (rval);
-    return -1;
+    return rval;
   }
 
   // Wait for Smartconfig process complete or return an error if we have
@@ -415,41 +416,35 @@ char sp_smart_config(void)
   }
 
   PRINTLN (F("Enabling auto-connect policy..."));
-  if ((rval = wlan_ioctl_set_connection_policy(DISABLE, DISABLE, ENABLE))
-      != 0) {
+  if ((rval = wlan_ioctl_set_connection_policy(DISABLE,DISABLE,ENABLE)) != 0) {
     PRINT (F("Setting auto connection policy failed, error: ")); PRINTLN (rval);
-    return -1;
+    return rval;
   }
 
   PRINTLN (F("Stopping CC3000..."));
   wlan_stop();  // no error returned here, so nothing to check
-
   PRINTLN (F("Pausing for 2 seconds..."));
   delay(2000);
-
   PRINTLN (F("Restarting CC3000... "));
   wlan_start(0);  // no error returned here, so nothing to check
 
-  PRINTLN (F("Waiting for connection to AP..."));
-  while (ulCC3000Connected != 1)
-    ;
-
-  PRINTLN (F("Waiting for IP address from DHCP..."));
-  while (ulCC3000DHCP != 1)
-    ;
+  PRINTLN (F("Waiting for connection to AP and DHCP lease to arrive..."));
+  while (!ulCC3000Connected && !ulCC3000DHCP);
 
   PRINTLN (F("Sending mDNS broadcast to signal we're done with Smart Config..."));
-  mdnsAdvertiser(1, device_name, strlen(device_name));
-  // The API documentation says mdnsAdvertiser()
-  // is supposed to return 0 on success and SOC_ERROR on failure, but it looks like
-  // what it actually returns is the socket number it used. So we ignore it.
+  mdnsAdvertiser (1, device_name, strlen(device_name));
 
   PRINTLN (F("Smart Config finished!"));
-
   return 0;
 }
 
-void sp_set_connection_policy (byte policy)
+//*****************************************************************************
+//*
+//* Description:
+//*   Sets the connection policy of the device
+//*
+//*****************************************************************************
+void sp_set_connection_policy (int policy)
 {
   byte open_ap = 0;
   byte fast_connect = 0;
