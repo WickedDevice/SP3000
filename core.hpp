@@ -98,4 +98,8 @@ char *SendFirmwarePatch(unsigned long *Length);
 char *SendDriverPatch(unsigned long *Length);
 char *SendBootloaderPatch(unsigned long *Length);
 
+void sp_core_register_event_cb (void (*cb_ptr)(uint32_t EventType,
+    char *data,
+    uint8_t len));
+
 #endif

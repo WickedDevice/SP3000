@@ -236,9 +236,6 @@ long closesocket(long sd)
   long ret;
   unsigned char *ptr, *args;
 
-  // Wait for all buffers to be sent before closing.
-  while (tSLInformation.usNumberOfFreeBuffers != 6);
-
   ret = EFAIL;
   ptr = tSLInformation.pucTxCommandBuffer;
   args = (ptr + HEADERS_SIZE_CMD);

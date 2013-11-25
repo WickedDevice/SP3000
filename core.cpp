@@ -46,10 +46,6 @@ volatile unsigned char ucStopSmartConfig;
 #define CC3000_APP_BUFFER_SIZE         (5)
 #define CC3000_RX_BUFFER_OVERHEAD_SIZE (20)
 
-/*
-unsigned char pucCC3000_Rx_Buffer[CC3000_APP_BUFFER_SIZE + CC3000_RX_BUFFER_OVERHEAD_SIZE];
-*/
-
 byte asyncNotificationWaiting=false;
 long lastAsyncEvent;
 byte dhcpIPAddress[4];
@@ -61,6 +57,10 @@ uint8_t WLAN_IRQ_INTNUM;  // The attachInterrupt() number that corresponds
                           // to WLAN_IRQ
 uint8_t SD_CARD_CS;       // Pin connected to the CS signal of the SD Card
 uint8_t SRAM_CS;          // Pin connected to the CS signal of the SRAM
+
+void (*cb_ptr)(uint32_t EventType,
+               char *data,
+               uint8_t len) = NULL;   // Function pointer for the async callback
 
 /*-------------------------------------------------------------------
 
@@ -130,7 +130,23 @@ void CC3000_AsyncCallback(long lEventType, char * data, unsigned char length)
 			asyncNotificationWaiting=true;
 			break;		
 		}
+	  // If we have a user defined call back make sure it is being called
+	  if (cb_ptr)
+	    cb_ptr(lEventType, data, length);
 	}
+
+/*-------------------------------------------------------------------
+
+    Stores a user function pointer which will be called when an
+    asynchronous even occurs.
+
+---------------------------------------------------------------------*/
+void sp_core_register_event_cb (void (*f_ptr)(uint32_t EventType,
+    char *data,
+    uint8_t len))
+{
+  cb_ptr = f_ptr;
+}
 
 /*-------------------------------------------------------------------
 

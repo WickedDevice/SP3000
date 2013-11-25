@@ -359,7 +359,7 @@ hci_event_handler(void *pRetParams, unsigned char *from, unsigned char *fromlen)
 							break;
 						}
                                                 
-                                        case HCI_EVNT_SEND:
+					case HCI_EVNT_SEND:
 					case HCI_EVNT_SENDTO:
 						{
 							STREAM_TO_UINT32((char *)pucReceivedParams,SL_RECEIVE_SD_OFFSET ,*(unsigned long *)pRetParams);

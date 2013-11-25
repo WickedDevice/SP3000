@@ -100,6 +100,22 @@ int sp_connect(uint32_t destIP, uint16_t destPort, uint32_t type)
 //*****************************************************************************
 //*
 //* Description:
+//*   A replacement for the socket method "closesocket" which first ensures
+//*   that all data has been transmitted by CC3000 before attempting to close
+//*   the socket.
+//*
+//*****************************************************************************
+int sp_close(int sd)
+{
+  while (tSLInformation.NumberOfSentPackets !=
+      tSLInformation.NumberOfReleasedPackets);
+
+  return closesocket(sd);
+}
+
+//*****************************************************************************
+//*
+//* Description:
 //*   Sends the content of the supplied string
 //*
 //*****************************************************************************
@@ -141,7 +157,6 @@ int sp_send (uint32_t s, char *str)
 int sp_send (uint32_t s, long value)
 {
   uint8_t i = 0;
-  size_t n = 0;
   int ret
 
   PRINTLN (F("Entered send_l"));
@@ -152,11 +167,10 @@ int sp_send (uint32_t s, long value)
   ltoa (value, (char *)txbuf, 10);
   i = strlen((char*)txbuf);
 
-  txbuf[i] = 0;
   if (0 > (ret = send(s, txbuf, i, 0))) return ret;
-  n += ret;
+
   PRINTLN (F("Leaving send_l"));
-  return n;
+  return ret;
 }
 
 //*****************************************************************************
@@ -276,7 +290,7 @@ int sp_read_line (int16_t s, char *output, int len)
 //*   Checks if there is data available in the supplied socket stream
 //*
 //*****************************************************************************
-uint8_t data_available(int16_t s,  uint16_t time)
+uint8_t data_available(int16_t s,  long secs, long usecs)
 {
   timeval timeout;
   fd_set fd_read;
@@ -297,8 +311,8 @@ uint8_t data_available(int16_t s,  uint16_t time)
   memset(&fd_read, 0, sizeof(fd_read));
   FD_SET(s, &fd_read);
 
-  timeout.tv_sec = time;
-  timeout.tv_usec = 0;
+  timeout.tv_sec = secs;
+  timeout.tv_usec = usecs;
 
   PRINTLN (F("Leaving data_available"));
   return ((select(s + 1, &fd_read, NULL, NULL, &timeout) == 1) ? 1 : 0);
@@ -307,12 +321,25 @@ uint8_t data_available(int16_t s,  uint16_t time)
 //*****************************************************************************
 //*
 //* Description:
-//*   Checks if there is data available in the supplied socket stream
+//*   Checks if there is data available in the socket stream. The number of
+//*   seconds before it times out can be set.
+//*
+//*****************************************************************************
+uint8_t data_available(int16_t s, long secs)
+{
+  return data_available (s, secs, 0);
+}
+
+//*****************************************************************************
+//*
+//* Description:
+//*   Checks if there is data available in the socket stream. The timeout
+//*   is 1 second.
 //*
 //*****************************************************************************
 uint8_t data_available(int16_t s)
 {
-  return data_available (s, 1);
+  return data_available (s, 1, 0);
 }
 
 //*****************************************************************************

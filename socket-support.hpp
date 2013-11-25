@@ -31,12 +31,14 @@ enum sp_connection_policies {
 // Function prototypes
 //
 int sp_connect (uint32_t destIP, uint16_t destPort, uint32_t type);
+int sp_close(int sd);
 int sp_send (uint32_t s, const __FlashStringHelper *string);
 int sp_send (uint32_t s, long value);
 int sp_send (uint32_t s, char *str);
 
 uint8_t data_available(int16_t s);
-uint8_t data_available(int16_t s, uint16_t time);
+uint8_t data_available(int16_t s, long secs);
+uint8_t data_available(int16_t s, long secs, long usecs);
 uint8_t sp_read(int16_t s);
 int sp_read_line (int16_t s, char *output, int len);
 uint8_t sp_peek(int16_t s);

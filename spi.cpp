@@ -678,7 +678,7 @@ int SpiInit(void)
   SPI.begin();
   SPI.setDataMode(SPI_MODE1);
   SPI.setBitOrder(MSBFIRST);
-  SPI.setClockDivider(SPI_CLOCK_DIV4);
+  SPI.setClockDivider(SPI_CLOCK_DIV2);
 
   negate_cs();
 
