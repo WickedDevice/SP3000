@@ -127,7 +127,7 @@ static int HostFlowControlConsumeBuff(int sd)
 
     if (SOCKET_STATUS_ACTIVE != get_socket_active_status(sd))
       return -1;
-  } while (0 == tSLInformation.usNumberOfFreeBuffers);
+  } while (1 >= tSLInformation.usNumberOfFreeBuffers);
 
   tSLInformation.usNumberOfFreeBuffers--;
 

@@ -35,6 +35,7 @@ extern void SpiOpen(gcSpiHandleRx pfRxHandler);
 extern void SpiClose(void);
 extern long SpiWrite(unsigned char *pUserBuffer, unsigned short usLength);
 extern void SpiResumeSpi(void);
+extern void SpiPauseSpi(void);
 extern void CC3000InterruptHandler(void);
 extern int SpiInit (void);
 

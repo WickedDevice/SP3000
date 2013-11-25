@@ -157,7 +157,7 @@ int sp_send (uint32_t s, char *str)
 int sp_send (uint32_t s, long value)
 {
   uint8_t i = 0;
-  int ret
+  int ret;
 
   PRINTLN (F("Entered send_l"));
 
@@ -202,6 +202,7 @@ int sp_send (uint32_t s, const __FlashStringHelper *string)
       i = 0;
     }
   }
+
   if ((ret = send(s, txbuf, i, 0)) < 0) return ret;
   n += ret;
 
