@@ -108,32 +108,29 @@ void loop(void)
     } else if (wlan_connected) {
       newsock = accept(listenSocket, (sockaddr*)&clientAddr, &addrLen);
       if (newsock >= 0) {
-        // Wait for data to arrive
-        if (data_available (newsock, 5)) {
-          // Make sure we have a http get request
-          if (sp_read_line (newsock, buff, 32) > 0) {
-            if (strncmp ((char*)&buff, "GET", 3) == 0) {
-              if (read_client_http_headers (newsock) >= 0) {
-                // Send http response
-                sp_send (newsock, F("HTTP/1.1 200 OK\n"));
-                sp_send (newsock, F("Server: Sweet Peas WiFi Server\r\n"));
-                sp_send (newsock, F("Content-Type: text/html"));
-                sp_send (newsock, F("\r\n\r\n"));
-                // And some data to show of
-                sp_send (newsock, F("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" "));
-                sp_send (newsock, F("\"http://www.w3.org/TR/html4/strict.dtd\"><html>\n"));
-                sp_send (newsock, F("<head><title>Sweet Pea WiFi Shield Demo</title></head><body>\n"));
-                sp_send (newsock, F("<meta http-equiv=\"refresh\" content=\"5\">"));
-                for (int i=0;i<5;i++)
-                  sp_send (newsock, F("This should be visible now !<br>"));
-                sp_send (newsock, F("</body></html>"));
-                lSer.print (F("Number of requests made: "));
-                lSer.print (++requests);
-              }
-            } else lSer.println (F("No GET found"));
-          } else lSer.println (F("Could not read line"));
-        } else lSer.println (F("No data available"));
-        closesocket (newsock);
+        // Make sure we have a http get request
+        if (sp_read_line (newsock, buff, 32) > 0) {
+          if (strncmp ((char*)&buff, "GET", 3) == 0) {
+            if (read_client_http_headers (newsock) >= 0) {
+              // Send http response
+              sp_send (newsock, F("HTTP/1.1 200 OK\n"));
+              sp_send (newsock, F("Server: Sweet Peas WiFi Server\r\n"));
+              sp_send (newsock, F("Content-Type: text/html"));
+              sp_send (newsock, F("\r\n\r\n"));
+              // And some data to show of
+              sp_send (newsock, F("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" "));
+              sp_send (newsock, F("\"http://www.w3.org/TR/html4/strict.dtd\"><html>\n"));
+              sp_send (newsock, F("<head><title>Sweet Pea WiFi Shield Demo</title></head><body>\n"));
+              sp_send (newsock, F("<meta http-equiv=\"refresh\" content=\"5\">"));
+              for (int i=0;i<5;i++)
+                sp_send (newsock, F("This should be visible now !<br>"));
+              sp_send (newsock, F("</body></html>"));
+              lSer.print (F("Number of requests made: "));
+              lSer.print (++requests);
+            }
+          } else lSer.println (F("No GET found"));
+        } else lSer.println (F("Could not read line"));
+        sp_close (newsock);
       }
     }
   } else {
