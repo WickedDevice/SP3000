@@ -8,16 +8,24 @@
 #include <sp3000.h>   // The Sweet Pea WiFi Library
 #include <SPI.h>      // Required
 
-#define CC3000_MODE      0
-#define CC3000_CS_PIN    10
-#define CC3000_EN_PIN    7
-#define CC3000_IRQ_PIN   3
-#define CC3000_IRQ_LEVEL 1
-#define SD_CARD_CS_PIN   4
-#define SRAM_CS_PIN      9
-#define FEED_ID          <insert your feed id here>
-
-#define lSer             Serial
+#if defined(__AVR_ATmega32U4__)  // Pins on LeoFi are fixed
+  #define CC3000_MODE      0
+  #define CC3000_CS_PIN    6
+  #define CC3000_EN_PIN    5
+  #define CC3000_IRQ_PIN   7
+  #define CC3000_IRQ_LEVEL 4
+  #define lSer             Serial
+#else
+  #define CC3000_MODE      0
+  #define CC3000_CS_PIN    10
+  #define CC3000_EN_PIN    7
+  #define CC3000_IRQ_PIN   3
+  #define CC3000_IRQ_LEVEL 1
+  #define SD_CARD_CS_PIN   4
+  #define SRAM_CS_PIN      9
+  #define FEED_ID          <insert your feed id here>
+  #define lSer             Serial
+#endif
 
 // This specifies how often we should poll sen.se for new data
 #define INTERVAL        10000

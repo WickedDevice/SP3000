@@ -66,7 +66,7 @@ void setup(void)
   lSer.begin (115200);
 
 #if defined(__AVR_ATmega32U4__)
-  while (!Serial); // Leonardo stuff
+  while (!lSer); // Leonardo stuff
 #endif
 
   lSer.println (F("\n\nElectronic Sweet Peas Demonstration program !"));
@@ -141,8 +141,7 @@ void loop(void)
     if (wlan_connected) {
       if (!ulCC3000Connected) {
         wlan_connected = 0;
-        lSer.print (F("Disconnected from "));
-        lSer.println (netssid);
+        lSer.println (F("Disconnected !"));
       }
     }
   }

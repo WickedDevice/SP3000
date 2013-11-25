@@ -7,10 +7,13 @@
   Sweet Pea LeFi board.
 */
 
-// By enabling this macro the code is compiled for the Sweet Pea LeoFi board
-//#define LEOFI
+#include <sp3000.h>
+#include <SPI.h>
+#if !defined(__AVR_ATmega32U4__)
+#include <Wire.h>
+#endif
 
-#ifdef LEOFI
+#if defined(__AVR_ATmega32U4__)  // Pins on LeoFi are fixed
   #define CC3000_MODE      0
   #define CC3000_CS_PIN    6
   #define CC3000_EN_PIN    5
@@ -31,16 +34,9 @@
   #define lSer             Serial
   #define SD_CARD_CS_PIN   4
   #define SRAM_CS_PIN      9
-  #define UDP_TEST
 #endif
 
 #define LED              13
-
-#include <sp3000.h>
-#include <SPI.h>
-#ifndef LEOFI
-#include <Wire.h>
-#endif
 
 // Keeps track of the current state of the network.
 byte netStat = 0;
@@ -50,44 +46,35 @@ char *netkey = "CountlessHours1024";
 
 void setup(void)
 {
-#ifdef LEOFI
+#if defined(__AVR_ATmega32U4__)
   // Using the LED to indicate that we are connected
   pinMode (LED, OUTPUT);
   digitalWrite (LED, LOW);
 #endif
 
   lSer.begin(115200);
+
+  lSer.println (F("\n\nElectronic Sweet Peas Demonstration program !"));
+  lSer.println (F("Visit http://www.sweetpeas.se for more information !\n"));
   
-#ifndef LEOFI
+#if !defined(__AVR_ATmega32U4__)
   // Disable the Sweet Pea WiFi shield on board SPI devices
   digitalWrite(SD_CARD_CS_PIN, HIGH);
   digitalWrite(SRAM_CS_PIN, HIGH);
   pinMode(SD_CARD_CS_PIN, OUTPUT);
   pinMode(SRAM_CS_PIN, OUTPUT);
 #endif
-
-  SPI.begin();
-  SPI.setDataMode(SPI_MODE1);
-  SPI.setBitOrder(MSBFIRST);
-  SPI.setClockDivider(SPI_CLOCK_DIV2);
-  
-#ifndef LEOFI
-  // If you are running this example on a Sweet Pea Mega board you should keep
-  // pin 53. But if your running it on a Uno or similar board you need to change
-  // this pin number to 10.
-  pinMode(53, OUTPUT);
-#endif
-  
-#ifdef LEOFI
+ 
+#if defined(__AVR_ATmega32U4__)
   // Leonardo needs to wait for a serial connection.
   while (!lSer);
-  lSer.println (F("Serial port connected to LeoFfi !"));
+  lSer.println (F("Serial port connected to LeoFi !"));
 #else
   lSer.println (F("Serial port connected to Arduino board !"));
 #endif
 
   // Initialize wlan module
-  CC3000_Init (CC3000_MODE, CC3000_CS_PIN, CC3000_EN_PIN, CC3000_IRQ_PIN, CC3000_IRQ_LEVEL);
+  sp_wifi_init (CC3000_MODE, CC3000_CS_PIN, CC3000_EN_PIN, CC3000_IRQ_PIN, CC3000_IRQ_LEVEL);
   lSer.println(F("CC3000 - Init complete."));
   
   // Make sure the module is clean from any previous connections
@@ -100,8 +87,9 @@ void setup(void)
   // Now, connect to our network
   wlan_connect(WLAN_SEC_WPA2, (char *)netssid, strlen(netssid), NULL,
                              (unsigned char *)netkey, strlen(netkey));
-//
-// The main loop will wait for the wifi module to connect and to get an IP address via DHCP
+
+// The main loop will wait for the wifi module to connect and to get an IP 
+// address via DHCP
 }
 
 void loop(void)
@@ -186,20 +174,20 @@ void client_connect(void)
     lSer.println (F("Successfully connected !!!"));
     
     // Make a http get request
-    send_F (s, F("GET "));
-    send_F (s, F(WEBPAGE));
-    send_F (s, F(" HTTP/1.0\r\n"));
-    send_F (s, F("Host: "));
-    send_F (s, F(WEBSITE));
-    send_F (s, F("\n"));
-    send_F (s, F("Connection: close\n"));
-    send_F (s, F("\n"));
+    sp_send (s, F("GET "));
+    sp_send (s, F(WEBPAGE));
+    sp_send (s, F(" HTTP/1.0\r\n"));
+    sp_send (s, F("Host: "));
+    sp_send (s, F(WEBSITE));
+    sp_send (s, F("\n"));
+    sp_send (s, F("Connection: close\n"));
+    sp_send (s, F("\n"));
 
     while (data_available(s)) {
-      char c = read_data(s);
+      char c = sp_read(s);
       lSer.write(c);
     }
-    closesocket(s);
+    sp_close (s);
   }
 }
 

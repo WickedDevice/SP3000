@@ -23,7 +23,7 @@
 //#define CC3000_TINY_DRIVER  1
 
 /*
- * You can also disable SmartConfig enryption whch will also save us a bunch
+ * You can also disable SmartConfig enryption which will also save us a bunch
  * of memory but will disallow the use of encrypted SmartConfig.
  */
 //#define CC3000_UNENCRYPTED_SMART_CONFIG 1
