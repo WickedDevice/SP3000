@@ -7,24 +7,11 @@
 
 #include <sp3000.h>
 #include <SPI.h>
+#include <WildFire.h>
+WildFire wf;
 
-#if defined(__AVR_ATmega32U4__)  // Pins on LeoFi are fixed
-  #define CC3000_MODE      0
-  #define CC3000_CS_PIN    6
-  #define CC3000_EN_PIN    5
-  #define CC3000_IRQ_PIN   7
-  #define CC3000_IRQ_LEVEL 4
-  #define lSer             Serial
-#else
-  #define CC3000_MODE      0
-  #define CC3000_CS_PIN    10 
-  #define CC3000_EN_PIN    7
-  #define CC3000_IRQ_PIN   3
-  #define CC3000_IRQ_LEVEL 1
-  #define SD_CARD_CS_PIN   4
-  #define SRAM_CS_PIN      9
-  #define lSer             Serial2
-#endif
+#define CC3000_MODE      0
+#define lSer             Serial
 
 // Keeps track of the current connections status
 byte wlan_connected = 0;
@@ -63,26 +50,14 @@ void EventHandler (uint32_t eventtype, char *data, uint8_t len)
 //
 void setup(void)
 {
+  wf.begin();
   lSer.begin (115200);
-
-#if defined(__AVR_ATmega32U4__)
-  while (!lSer); // Leonardo stuff
-#endif
 
   lSer.println (F("\n\nElectronic Sweet Peas Demonstration program !"));
   lSer.println (F("Visit http://www.sweetpeas.se for more information !\n"));
-  
-#if !defined(__AVR_ATmega32U4__)  // Not for LeoFi
-  // The first thing we do is disable all the peripherals on the WiFi shield
-  // that we are not using in this example.
-  digitalWrite(SD_CARD_CS_PIN, HIGH);
-  digitalWrite(SRAM_CS_PIN, HIGH);
-  pinMode(SD_CARD_CS_PIN, OUTPUT);
-  pinMode(SRAM_CS_PIN, OUTPUT);
-#endif
 
   lSer.print(F("Initializing"));
-  sp_wifi_init (CC3000_MODE, CC3000_CS_PIN, CC3000_EN_PIN, CC3000_IRQ_PIN, CC3000_IRQ_LEVEL);
+  sp_wifi_init (CC3000_MODE);
   lSer.println(F(" complete."));
 
   lSer.print (F("Host driver version: "));

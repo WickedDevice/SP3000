@@ -9,34 +9,11 @@
 
 #include <sp3000.h>
 #include <SPI.h>
-#if !defined(__AVR_ATmega32U4__)
-#include <Wire.h>
-#endif
+#include <WildFire.h>
+WildFire wf;
 
-#if defined(__AVR_ATmega32U4__)  // Pins on LeoFi are fixed
-  #define CC3000_MODE      0
-  #define CC3000_CS_PIN    6
-  #define CC3000_EN_PIN    5
-  #define CC3000_IRQ_PIN   7
-  #define CC3000_IRQ_LEVEL 4
-  #define lSer             Serial
-#else
-  // The following pin definitions match the default configuration of the 
-  // Sweet Pea WiFi shield.
-  // Change these pin definitions to match your own configuration.
-  #define CC3000_MODE      0
-  #define CC3000_CS_PIN    10
-  #define CC3000_EN_PIN    7
-  #define CC3000_IRQ_PIN   3
-  #define CC3000_IRQ_LEVEL 1
-  // I normally use a USB to serial cable connected to Serial1 on a Sweet Pea Mega
-  // board. You can change it to anything you want.
-  #define lSer             Serial
-  #define SD_CARD_CS_PIN   4
-  #define SRAM_CS_PIN      9
-#endif
-
-#define LED              13
+#define CC3000_MODE      0
+#define lSer             Serial
 
 // Keeps track of the current state of the network.
 byte netStat = 0;
@@ -46,35 +23,16 @@ char *netkey = "CountlessHours1024";
 
 void setup(void)
 {
-#if defined(__AVR_ATmega32U4__)
-  // Using the LED to indicate that we are connected
-  pinMode (LED, OUTPUT);
-  digitalWrite (LED, LOW);
-#endif
+  wf.begin();
 
   lSer.begin(115200);
 
   lSer.println (F("\n\nElectronic Sweet Peas Demonstration program !"));
-  lSer.println (F("Visit http://www.sweetpeas.se for more information !\n"));
-  
-#if !defined(__AVR_ATmega32U4__)
-  // Disable the Sweet Pea WiFi shield on board SPI devices
-  digitalWrite(SD_CARD_CS_PIN, HIGH);
-  digitalWrite(SRAM_CS_PIN, HIGH);
-  pinMode(SD_CARD_CS_PIN, OUTPUT);
-  pinMode(SRAM_CS_PIN, OUTPUT);
-#endif
- 
-#if defined(__AVR_ATmega32U4__)
-  // Leonardo needs to wait for a serial connection.
-  while (!lSer);
-  lSer.println (F("Serial port connected to LeoFi !"));
-#else
+  lSer.println (F("Visit http://www.sweetpeas.se for more information !\n"));   
   lSer.println (F("Serial port connected to Arduino board !"));
-#endif
 
   // Initialize wlan module
-  sp_wifi_init (CC3000_MODE, CC3000_CS_PIN, CC3000_EN_PIN, CC3000_IRQ_PIN, CC3000_IRQ_LEVEL);
+  sp_wifi_init (CC3000_MODE);
   lSer.println(F("CC3000 - Init complete."));
   
   // Make sure the module is clean from any previous connections

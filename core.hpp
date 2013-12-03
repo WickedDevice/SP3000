@@ -47,7 +47,7 @@
 extern uint8_t WLAN_IRQ_INTNUM;  // The attachInterrupt() number that corresponds
                                   // to WLAN_IRQ
 
-extern void CC3000_Init(byte mode);
+extern void sp_wifi_init(byte mode);
 /*
  * Differently from the original author of these files we decided to include
  * the digitalFastWrite header file with this library. At least until the

@@ -237,7 +237,7 @@ void WlanInterruptDisable(void)
     to indicate we're not sending any patches.
     
  --------------------------------------------------------------------*/
-void CC3000_Init(byte startReqest)
+void sp_wifi_init(byte startReqest)
 {
   /*
    * Initialize pins used

@@ -1591,7 +1591,7 @@ void setup()
   
   lSer.println (F("\n*************** CC3000 Patch programmer V1.0 ****************"));
   lSer.println(F("\nInitialising the CC3000 ..."));
-  CC3000_Init (CC3000_MODE);
+  sp_wifi_init (CC3000_MODE);
 
   lSer.println (F("System information."));
   lSer.print(F("RX Buffer : "));
