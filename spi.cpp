@@ -104,7 +104,7 @@ void SpiPauseSpi(void)
 
 void SpiResumeSpi(void)
 {
-  EICRA = (EICRA & ~((1 << ISC20) | (1 << ISC21))) | (mode << ISC20);
+  EICRA = (EICRA & ~((1 << ISC20) | (1 << ISC21))) | (FALLING << ISC20);
   EIMSK |= (1 << INT2);
 }
 

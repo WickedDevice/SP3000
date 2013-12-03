@@ -8,7 +8,6 @@
 #include <Arduino.h>
 
 #include "jobqueue.hpp"
-#include "leds.hpp"
 
 static char r_ptr;
 static char w_ptr;
@@ -71,11 +70,11 @@ char process_jobs (void)
   while (queue_get(&job) == JOB_QUE_OK) {
     switch (job.job) {
       case JOB_SET_LED:
-        setled (job.data, 1);
+        // setled (job.data, 1);
         break;
 
       case JOB_CLR_LED:
-        setled (job.data, 0);
+        // setled (job.data, 0);
         break;
 
       case JOB_DELAYED_CLR:

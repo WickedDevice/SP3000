@@ -31,8 +31,6 @@
 #include "wlan.hpp"
 #include "hci.hpp"
 #include "spi.hpp"
-#include "pca9536.hpp"
-#include "leds.hpp"
 
 volatile unsigned long ulSmartConfigFinished,
 	ulCC3000Connected,
@@ -50,13 +48,13 @@ byte asyncNotificationWaiting=false;
 long lastAsyncEvent;
 byte dhcpIPAddress[4];
 
-uint8_t WLAN_CS;          // Arduino pin connected to CC3000 WLAN_SPI_CS
-uint8_t WLAN_EN;          // Arduino pin connected to CC3000 VBAT_SW_EN
-uint8_t WLAN_IRQ;         // Arduino pin connected to CC3000 WLAN_SPI_IRQ
+// uint8_t WLAN_CS;          // Arduino pin connected to CC3000 WLAN_SPI_CS
+// uint8_t WLAN_EN;          // Arduino pin connected to CC3000 VBAT_SW_EN
+// uint8_t WLAN_IRQ;         // Arduino pin connected to CC3000 WLAN_SPI_IRQ
 uint8_t WLAN_IRQ_INTNUM;  // The attachInterrupt() number that corresponds
-                          // to WLAN_IRQ
-uint8_t SD_CARD_CS;       // Pin connected to the CS signal of the SD Card
-uint8_t SRAM_CS;          // Pin connected to the CS signal of the SRAM
+//                           // to WLAN_IRQ
+// uint8_t SD_CARD_CS;       // Pin connected to the CS signal of the SD Card
+// uint8_t SRAM_CS;          // Pin connected to the CS signal of the SRAM
 
 void (*cb_ptr)(uint32_t EventType,
                char *data,
@@ -258,8 +256,6 @@ void CC3000_Init(byte startReqest)
   PORTB |= _BV(2); // digitalWrite(g_irqPin, HIGH); // w/weak pullup
   
   PORTB |= _BV(4); // 
-
-	wlan_int_status = INT_DISABLED;
 	
 	wlan_init( CC3000_AsyncCallback,
 		SendFirmwarePatch,

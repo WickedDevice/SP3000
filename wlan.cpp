@@ -49,7 +49,6 @@
 #include "nvmem.hpp"
 #include "security.hpp"
 #include "evnt_handler.hpp"
-#include "leds.hpp"
 
 
 volatile sSimplLinkInformation tSLInformation;
@@ -449,7 +448,7 @@ long wlan_connect(unsigned long ulSecType, char *ssid, long ssid_len,
 	
 	if (errno >= 0) {
 	  // Indicate that there is a valid connection
-	  setled (LED_CON, LED_ON);
+	  // setled (LED_CON, LED_ON);
 	}
 
 	return(ret);

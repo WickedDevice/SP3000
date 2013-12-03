@@ -8,33 +8,14 @@
 
 // This macro disables a few functions to ensure that the program fits inside
 // a Sweet Pea LeoFi
-#define LEOFI
-
-#ifdef LEOFI
-  #define CC3000_MODE      0
-  #define CC3000_CS_PIN    6
-  #define CC3000_EN_PIN    5
-  #define CC3000_IRQ_PIN   7
-  #define CC3000_IRQ_LEVEL 4
-  // Se
-  #define lSer             Serial
-#else
-  #define CC3000_MODE      0
-  #define CC3000_CS_PIN    10
-  #define CC3000_EN_PIN    7
-  #define CC3000_IRQ_PIN   3
-  #define CC3000_IRQ_LEVEL 1
-  // I normally use a USB to serial cable connected to Serial1 on a Sweet Pea Mega
-  // board. You can change it to anything you want.
-  #define lSer             Serial1
-  #define SD_CARD_CS_PIN   4
-  #define SRAM_CS_PIN      9
-  #define UDP_TEST
-#endif
+#define CC3000_MODE      0
+#define lSer             Serial
+#define UDP_TEST
 
 #include <sp3000.h>
 #include <SPI.h>
-#include <Wire.h>
+#include <WildFire.h>
+WildFire wf;
 
 // Global variable that holds the initialized status of the 
 // CC3000 module.
@@ -42,28 +23,16 @@ byte isInitialized = false;
 
 void setup(void)
 {
+  wf.begin();
+  
   lSer.begin(115200);
   lSer.println (F("ON"));
   
-#ifndef LEOFI
-  digitalWrite(SD_CARD_CS_PIN, HIGH);
-  digitalWrite(SRAM_CS_PIN, HIGH);
-  pinMode(SD_CARD_CS_PIN, OUTPUT);
-  pinMode(SRAM_CS_PIN, OUTPUT);
-#endif
-
   SPI.begin();
   SPI.setDataMode(SPI_MODE1);
   SPI.setBitOrder(MSBFIRST);
-  SPI.setClockDivider(SPI_CLOCK_DIV2);
-  
-  pinMode(53, OUTPUT);
-  
-#ifdef LEOFI
-  // Leonardo needs to wait for a serial connection.
-  while (!lSer);
-  lSer.println (F("Connected to LeoFfi !"));
-#endif
+  SPI.setClockDivider(SPI_CLOCK_DIV2);  
+  pinMode(SS, OUTPUT); 
 }
 
 void AsyncEventPrint(void)
@@ -75,17 +44,14 @@ void AsyncEventPrint(void)
       break;
 
     case HCI_EVNT_WLAN_UNSOL_CONNECT:
-      setled (LED_CON, LED_ON);
       lSer.println(F("\nCC3000 Async event: Unsolicited connect"));
       break;
 
-    case HCI_EVNT_WLAN_UNSOL_DISCONNECT:
-      setled (LED_CON, LED_OFF);
+    case HCI_EVNT_WLAN_UNSOL_DISCONNECT:      
       lSer.println(F("\nCC3000 Async event: Unsolicted disconnect"));
       break;
 
     case HCI_EVNT_WLAN_UNSOL_DHCP:
-      setled (LED_ACT, LED_ON);
       lSer.print(F("\nCC3000 Async event: Got IP address via DHCP: "));
       lSer.print(dhcpIPAddress[0]);
       lSer.print(F("."));
@@ -94,7 +60,6 @@ void AsyncEventPrint(void)
       lSer.print(dhcpIPAddress[2]);
       lSer.print(F("."));
       lSer.println(dhcpIPAddress[3]);
-      setled (LED_ACT, LED_OFF);
       break;
 
     case HCI_EVENT_CC3000_CAN_SHUT_DOWN:
@@ -163,41 +128,32 @@ void loop(void)
     case '1':
       Initialize();
       break;
-#ifndef LEOFI
     case '9':
       ShowBufferSize();
       ShowFreeRAM();
       break;
-#endif
     case '3':
       StartSmartConfig();
       break;
-#ifndef LEOFI
     case '4':
       ManualConnect();
       break;
     case '5':
       ManualAddProfile();
       break;
-#endif
     case '2':
       ListAccessPoints();
       break;
     case '6':
       ShowInformation();
       break;
-#ifndef LEOFI
     case '7':
       spi_test();
-      break;
-    case '8':
-      fastwrite_test();
       break;
     case 'A':
     case 'a':
       setup_listening_socket();
       break;
-#endif
     case 'B':
     case 'b':
       client_connect();
@@ -325,55 +281,6 @@ void client_connect(void)
     closesocket(s);
   }
 #endif
-}
-
-byte fastwrite_test(void)
-{
-  byte a;
-
-  lSer.print(F("Testing digitalFastWrite returns"));
-
-  pinMode(10, OUTPUT);
-  pinMode(11, OUTPUT);
-  pinMode(12, OUTPUT);
-  pinMode(13, OUTPUT);
-
-  digitalWrite(10, LOW);
-  digitalWrite(11, LOW);
-  digitalWrite(12, LOW);
-  digitalWrite(13, LOW);
-  digitalWrite(10, HIGH);
-  digitalWrite(11, HIGH);
-  digitalWrite(12, HIGH);
-  digitalWrite(13, HIGH);
-
-  digitalWriteFast(10, 0);
-  digitalWriteFast(11, 0);
-  digitalWriteFast(12, 0);
-  digitalWriteFast(13, 0);
-  digitalWriteFast(10, 1);
-  digitalWriteFast(11, 1);
-  digitalWriteFast(12, 1);
-  digitalWriteFast(13, 1);
-
-  digitalWriteFast(10, 0);
-  digitalWriteFast(11, 0);
-  digitalWriteFast(12, 0);
-  digitalWriteFast(13, 0);
-
-  /* Test reading */
-  a = digitalReadFast(10);
-  a = digitalReadFast(10);
-  a = digitalReadFast(10);
-  a = digitalReadFast(10);
-//  a = digitalReadFast(WLAN_IRQ);
-
-  if (a)
-    a = 0xff;
-  else
-    a = 0xaa;
-
-  return a;
 }
 
 void spi_test(void)
