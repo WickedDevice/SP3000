@@ -87,75 +87,7 @@ unsigned char wlan_tx_buffer[CC3000_TX_BUFFER_SIZE];
 
 void SpiPauseSpi(void)
 {
-// Copied from the system library
-  switch (WLAN_IRQ_INTNUM) {
-#if defined(__AVR_ATmega32U4__)
-  case 0:
-      EIMSK &= ~(1<<INT0);
-      break;
-  case 1:
-      EIMSK &= ~(1<<INT1);
-      break;
-  case 2:
-      EIMSK &= ~(1<<INT2);
-      break;
-  case 3:
-      EIMSK &= ~(1<<INT3);
-      break;
-  case 4:
-      EIMSK &= ~(1<<INT6);
-      break;
-#elif defined(EICRA) && defined(EICRB) && defined(EIMSK)
-  case 2:
-    EIMSK &= ~(1 << INT0);
-    break;
-  case 3:
-    EIMSK &= ~(1 << INT1);
-    break;
-  case 4:
-    EIMSK &= ~(1 << INT2);
-    break;
-  case 5:
-    EIMSK &= ~(1 << INT3);
-    break;
-  case 0:
-    EIMSK &= ~(1 << INT4);
-    break;
-  case 1:
-    EIMSK &= ~(1 << INT5);
-    break;
-  case 6:
-    EIMSK &= ~(1 << INT6);
-    break;
-  case 7:
-    EIMSK &= ~(1 << INT7);
-    break;
-#else
-  case 0:
-  #if defined(EIMSK) && defined(INT0)
-    EIMSK &= ~(1 << INT0);
-  #elif defined(GICR) && defined(ISC00)
-    GICR &= ~(1 << INT0); // atmega32
-  #elif defined(GIMSK) && defined(INT0)
-    GIMSK &= ~(1 << INT0);
-  #else
-    #error detachInterrupt not finished for this cpu
-  #endif
-    break;
-
-  case 1:
-  #if defined(EIMSK) && defined(INT1)
-    EIMSK &= ~(1 << INT1);
-  #elif defined(GICR) && defined(INT1)
-    GICR &= ~(1 << INT1); // atmega32
-  #elif defined(GIMSK) && defined(INT1)
-    GIMSK &= ~(1 << INT1);
-  #else
-    #warning detachInterrupt may need some more work for this cpu (case 1)
-  #endif
-    break;
-#endif
-  }
+  EIMSK &= ~(1 << INT2);
 }
 
 //*****************************************************************************
@@ -172,79 +104,8 @@ void SpiPauseSpi(void)
 
 void SpiResumeSpi(void)
 {
-  // Enable interrupts again
-  // We do not want to use attachInterrupt and detachInterrupt since they can
-  // cause spurious interrupts to occur when EICB registers are modified.
-  // The system libraries should have included maskInterrupt and unmaskInterrupt
-  // functions as well.
-  switch (WLAN_IRQ_INTNUM) {
-#if defined(__AVR_ATmega32U4__)
-  case 0:
-      EIMSK |= (1<<INT0);
-      break;
-  case 1:
-      EIMSK |= (1<<INT1);
-      break;
-  case 2:
-      EIMSK |= (1<<INT2);
-      break;
-  case 3:
-      EIMSK |= (1<<INT3);
-      break;
-  case 4:
-      EIMSK |= (1<<INT6);
-      break;
-#elif defined(EICRA) && defined(EICRB) && defined(EIMSK)
-  case 2:
-    EIMSK |= (1 << INT0);
-    break;
-  case 3:
-    EIMSK |= (1 << INT1);
-    break;
-  case 4:
-    EIMSK |= (1 << INT2);
-    break;
-  case 5:
-    EIMSK |= (1 << INT3);
-    break;
-  case 0:
-    EIMSK |= (1 << INT4);
-    break;
-  case 1:
-    EIMSK |= (1 << INT5);
-    break;
-  case 6:
-    EIMSK |= (1 << INT6);
-    break;
-  case 7:
-    EIMSK |= (1 << INT7);
-    break;
-#else
-  case 0:
-  #if defined(EIMSK) && defined(INT0)
-    EIMSK |= (1 << INT0);
-  #elif defined(GICR) && defined(ISC00)
-    GICR |= (1 << INT0); // atmega32
-  #elif defined(GIMSK) && defined(INT0)
-    GIMSK |= (1 << INT0);
-  #else
-    #error detachInterrupt not finished for this cpu
-  #endif
-    break;
-
-  case 1:
-  #if defined(EIMSK) && defined(INT1)
-    EIMSK |= (1 << INT1);
-  #elif defined(GICR) && defined(INT1)
-    GICR |= (1 << INT1); // atmega32
-  #elif defined(GIMSK) && defined(INT1)
-    GIMSK |= (1 << INT1);
-  #else
-    #warning detachInterrupt may need some more work for this cpu (case 1)
-  #endif
-    break;
-#endif
-  }
+  EICRA = (EICRA & ~((1 << ISC20) | (1 << ISC21))) | (mode << ISC20);
+  EIMSK |= (1 << INT2);
 }
 
 //*****************************************************************************
@@ -587,9 +448,11 @@ void CC3000InterruptHandler(void)
     sSpiInformation.ulSpiState = eSPI_STATE_READ_EOT;
     SSIContReadOperation();
   } else if (sSpiInformation.ulSpiState == eSPI_STATE_WRITE_IRQ) {
+
     SpiWriteDataSynchronous(sSpiInformation.pTxPacket,
         sSpiInformation.usTxPacketLength);
     sSpiInformation.ulSpiState = eSPI_STATE_IDLE;
+
     negate_cs();
   }
 }
@@ -663,16 +526,18 @@ int SpiInit(void)
 {
 
   // Disable the CC3000 by default */
-  pinMode(WLAN_EN, OUTPUT);
-  digitalWriteFast(WLAN_EN, 0);
+  DDRB |= _BV(3);   //pinMode(WLAN_EN, OUTPUT);
+  PORTB &= ~_BV(3); //digitalWrite(WLAN_EN, 0);
   delay(500);
 
   /* Set CS pin to output */
-  pinMode(WLAN_CS, OUTPUT);
+  DDRB |= _BV(4); //pinMode(WLAN_CS, OUTPUT);
 
   /* Set interrupt pin to input */
-  pinMode(WLAN_IRQ, INPUT);
-  digitalWriteFast(WLAN_IRQ, HIGH); /* Use a weak pullup */
+  DDRB &= _BV(2);  //pinMode(WLAN_IRQ, INPUT);
+  PORTB |= _BV(2); //digitalWrite(WLAN_IRQ, HIGH); /* Use a weak pullup */
+
+//  SpiConfigStoreOld(); // prime ccspi_old* values for DEASSERT
 
   /* Initialise SPI */
   SPI.begin();

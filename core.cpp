@@ -206,10 +206,10 @@ inline void WriteWlanEnablePin(unsigned char val)
 
 //  digitalWriteFast (WLAN_EN, (val) ? HIGH : LOW);
 	if (val) {
-		digitalWriteFast (WLAN_EN, HIGH);
+		PORTB |= _BV(3); //digitalWriteFast (WLAN_EN, HIGH);		
 	}
 	else {
-		digitalWriteFast (WLAN_EN, LOW);
+		PORTB &= ~_BV(3); //digitalWriteFast (WLAN_EN, LOW);
 	}
 }
 
@@ -239,46 +239,28 @@ void WlanInterruptDisable(void)
     to indicate we're not sending any patches.
     
  --------------------------------------------------------------------*/
-void sp_wifi_init (byte startReqest,
-                 uint8_t cs_pin,
-                 uint8_t en_pin,
-                 uint8_t irq_pin,
-                 uint8_t irq_num)
+void CC3000_Init(byte startReqest)
 {
   /*
    * Initialize pins used
    */
-  WLAN_CS = cs_pin;
-  WLAN_EN = en_pin;
-  WLAN_IRQ = irq_pin;
-  WLAN_IRQ_INTNUM = irq_num;
+  WLAN_IRQ_INTNUM = 2;
 
-  // Initialize the SPI library
-  SpiInit();
+  /* Set POWER_EN pin to output and disable the CC3000 by default */
+  DDRB |= _BV(3);   // pinMode(g_vbatPin, OUTPUT);
+  PORTB &= ~_BV(3); // digitalWrite(g_vbatPin, 0);
+  delay(500);
 
-  /*
-  * Initialize the PCA9536
-  */
-	initled();
+  /* Set CS pin to output (don't de-assert yet) */
+  DDRB |= _BV(4);  // pinMode(g_csPin, OUTPUT);
 
-	/* 
-	 * Set the initial state of the output pins before
-	 * enabling them as outputs in order to avoid
-	 * glitches. Also the hw need to have pull up/down
-	 * resistors on the signals pulling them to their
-	 * inactive state.
-	 */
-	negate_cs();	// turn off CS until we're ready
+  /* Set interrupt/gpio pin to input */
+  PORTB |= _BV(2); // digitalWrite(g_irqPin, HIGH); // w/weak pullup
+  
+  PORTB |= _BV(4); // 
 
-	/* Set the modes for the control pins */
-	pinMode(WLAN_IRQ, INPUT);
-	pinMode(WLAN_EN, OUTPUT);
-	pinMode(WLAN_CS, OUTPUT);
-
-	setled (LED_CON | LED_ACT | LED_ERR | LED_AUX, LED_ON);
-	delay (100);
-	setled (LED_CON | LED_ACT | LED_ERR | LED_AUX, LED_OFF);
-
+	wlan_int_status = INT_DISABLED;
+	
 	wlan_init( CC3000_AsyncCallback,
 		SendFirmwarePatch,
 		SendDriverPatch,
