@@ -101,26 +101,11 @@ void loop(void)
       lSer.print(F("."));
       lSer.println(dhcpIPAddress[3]);
 
-      // Create a listener socket
-      listenSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+      // Create a non blocking listener socket
+      listenSocket = sp_create_listener(port, 0);
       if (listenSocket < 0) {
-        lSer.println (F("Failed to created socket !"));
+        lSer.println (F("Failed to created listener !"));
         while (1);
-      }
-      lSer.print (F("Listening on socket "));
-      lSer.println (listenSocket);
-      
-      memset (&addr, 0, sizeof (addr));
-      addr.sin_family = htons(AF_INET);
-      addr.sin_port = htons(port);
-      
-      if (bind(listenSocket, (const sockaddr*)&addr, sizeof(addr)) != 0) {
-        lSer.println (F("Failed to bind address to socket !"));
-        while (1);        
-      }
-      if (listen(listenSocket, 10) != 0) {
-        lSer.println (F("Failed to connect listener to socket !"));
-        while (1);                
       }
     } else if (wlan_connected) {
       newsock = accept(listenSocket, (sockaddr*)&clientAddr, &addrLen);

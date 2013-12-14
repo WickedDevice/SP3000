@@ -284,10 +284,12 @@ void sp_wifi_init (byte startReqest,
 		SendDriverPatch,
 		SendBootloaderPatch,
 		ReadWlanInterruptPin,
-		WlanInterruptEnable,
-		WlanInterruptDisable,
+		SpiResumeSpi, // WlanInterruptEnable,
+		SpiPauseSpi, // WlanInterruptDisable,
 		WriteWlanEnablePin);
 	
+	WlanInterruptEnable();
+
 	wlan_start(startReqest);
 }
 
