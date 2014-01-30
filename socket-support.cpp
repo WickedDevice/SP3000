@@ -3,6 +3,11 @@
  *
  *  Created on: 22 sep 2013
  *      Author: pontus
+ *
+ *  Comments:
+ *    No efforts have been made to make this library thread safe. Instead focus
+ *    has been on making the library as small, and to use as little stack space
+ *    as possible.
  */
 
 #include "sp3000.h"
@@ -341,6 +346,44 @@ uint8_t data_available(int16_t s, long secs)
 uint8_t data_available(int16_t s)
 {
   return data_available (s, 1, 0);
+}
+
+static sockaddr_in addr;
+//*****************************************************************************
+//*
+//* Description:
+//*   Creates a socket, binds it to the local address and a specified port
+//*   and starts listening to it. It returns the listener socket.
+//*
+//*   Note: The blocking part has not been implemented yet.
+//*
+//*****************************************************************************
+int sp_create_listener (uint16_t port, boolean blocking)
+{
+  int ls;
+
+  ls = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if (ls < 0) {
+    PRINTLN (F("Failed to created socket !"));
+    return -SP_SOCK_CREATE_FAILED;
+  }
+
+  memset (&addr, 0, sizeof (addr));
+  addr.sin_family = htons(AF_INET);
+  addr.sin_port = htons(port);
+
+  if (bind(ls, (const sockaddr*)&addr, sizeof(addr)) != 0) {
+    PRINTLN (F("Failed to bind address to socket !"));
+    closesocket (ls);
+    return -SP_SOCK_BIND_FAILED;
+  }
+  if (listen(ls, 10) != 0) {
+    PRINTLN (F("Failed to connect listener to socket !"));
+    closesocket (ls);
+    return -SP_SOCK_LISTEN_FAILED;
+  }
+
+  return ls;
 }
 
 //*****************************************************************************

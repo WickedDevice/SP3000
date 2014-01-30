@@ -21,6 +21,13 @@
                             (uint32_t)((uint32_t)c << 16) | \
                             (uint32_t)((uint32_t)b << 8) | (uint32_t)a)
 
+enum sp_socket_errors {
+  SP_SOCK_OK = 0x00,            /**< Return code for a successful socket op */
+  SP_SOCK_CREATE_FAILED,        /**< Failed to create a socket */
+  SP_SOCK_BIND_FAILED,          /**< Failed to bind a socket */
+  SP_SOCK_LISTEN_FAILED,        /**< Failed to create a listener */
+  SP_SOCK_LAST_ENTRY,
+};
 /**
  * Connection policies
  */
@@ -194,6 +201,24 @@ uint8_t sp_read(int16_t sd);
  * @see sp_read, sp_peek
  */
 int sp_read_line (int16_t sd, char *output, int len);
+
+/**
+ * Creates a listening socket on the specified port. This method will create
+ * a socket, bind it to the local address and the specified port and then
+ * start a listening instance. The listener socket is returned to the caller.
+ *
+ * @param port The port associated with the listener
+ * @param blocking Indicates whether the associated socket should block
+ *                 subsequent calls to accept or not. 0 = non blocking, 1 =
+ *                 blocking.
+ *
+ * @return Returns the socket associated with the listener. If an error is
+ *         detected during the setup of the listener this error is returns
+ *         as a negative value.
+ *
+ * @see sp_socket_errors
+ */
+int sp_create_listener (uint16_t port, boolean blocking);
 
 /**
  * To be called when an ssid scan is required. Calling this method with
