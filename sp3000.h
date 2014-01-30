@@ -18,6 +18,7 @@
 #include "netapp.hpp"
 #include "host_driver_version.hpp"
 #include "evnt_handler.hpp"
+#include "leds.hpp"
 #include "socket-support.hpp"
 #include "sense.hpp"
 #include "http.hpp"

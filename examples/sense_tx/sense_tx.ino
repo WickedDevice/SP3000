@@ -7,11 +7,24 @@
 
 #include <sp3000.h>   // The Sweet Pea WiFi Library
 #include <SPI.h>      // Required
-#include <WildFire.h>
-WildFire wf;
 
-#define CC3000_MODE      0
-#define lSer             Serial
+#if defined(__AVR_ATmega32U4__)  // Pins on LeoFi are fixed
+  #define CC3000_MODE      0
+  #define CC3000_CS_PIN    6
+  #define CC3000_EN_PIN    5
+  #define CC3000_IRQ_PIN   7
+  #define CC3000_IRQ_LEVEL 4
+  #define lSer             Serial
+#else
+  #define CC3000_MODE      0
+  #define CC3000_CS_PIN    10
+  #define CC3000_EN_PIN    7
+  #define CC3000_IRQ_PIN   3
+  #define CC3000_IRQ_LEVEL 1
+  #define SD_CARD_CS_PIN   4
+  #define SRAM_CS_PIN      9
+  #define lSer             Serial
+#endif
 
 // This specifies how often we should send data
 #define INTERVAL        10000
@@ -33,13 +46,11 @@ uint32_t tRef;
 // data immediatly.
 //
 void setup() {
-  wf.begin();
-  
   lSer.begin (115200);
   lSer.println (F("Example on how to publish sensor data to Sen.se with the Sweet Pea WiFi shield !"));
 
   // Initialize WiFi module
-  sp_wifi_init (CC3000_MODE);
+  sp_wifi_init (CC3000_MODE, CC3000_CS_PIN, CC3000_EN_PIN, CC3000_IRQ_PIN, CC3000_IRQ_LEVEL);
   lSer.println(F("WiFi initialization complete."));
 
   // Connect to open access point and reconnect if needed.

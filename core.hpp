@@ -22,6 +22,8 @@
 #define __CORE_HPP_GUARD__
 
 #include <Arduino.h>
+
+#include "digitalWriteFast.hpp"
 #include "settings.hpp"
 
 /*
@@ -44,18 +46,25 @@
  *
  */
 
+extern uint8_t WLAN_CS;          // Arduino pin connected to CC3000 WLAN_SPI_CS
+extern uint8_t WLAN_EN;          // Arduino pin connected to CC3000 VBAT_SW_EN
+extern uint8_t WLAN_IRQ;         // Arduino pin connected to CC3000 WLAN_SPI_IRQ
 extern uint8_t WLAN_IRQ_INTNUM;  // The attachInterrupt() number that corresponds
                                   // to WLAN_IRQ
 
-extern void sp_wifi_init(byte mode);
+extern void sp_wifi_init (byte mode,
+                         uint8_t WLAN_CS,
+                         uint8_t WLAN_EN,
+                         uint8_t WLAN_IRQ,
+                         uint8_t WLAN_IRQ__NUM);
 /*
  * Differently from the original author of these files we decided to include
  * the digitalFastWrite header file with this library. At least until the
  * Arduino framework actually supports this feature properly.
  */
-#define irq_read()			            ((PINB & _BV(2)) >> 2)
-#define negate_cs()		              (PORTB |= _BV(4))
-#define assert_cs()			            (PORTB &= ~_BV(4))
+#define irq_read()			            digitalReadFast(WLAN_IRQ)
+#define negate_cs()		              digitalWriteFast(WLAN_CS, HIGH)
+#define assert_cs()			            digitalWriteFast(WLAN_CS, LOW)
 
 #define MAC_ADDR_LEN	6
 #define DISABLE	(0)
