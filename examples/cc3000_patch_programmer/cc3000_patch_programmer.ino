@@ -1,30 +1,18 @@
-//
-//
-// This is a firmware upgrade utility for the Sweet Pea WiFi shield.
-// It need to run on a Mega board due to the memory requirements.
-//
-#define CC3000_MODE      0
-#define CC3000_CS_PIN    10
-#define CC3000_EN_PIN    7
-#define CC3000_IRQ_PIN   3
-#define CC3000_IRQ_LEVEL 1
-// I normally use a USB to serial cable connected to Serial1 on a Sweet Pea Mega
-// board. You can change it to anything you want.
-#define lSer             Serial1
-#define SD_CARD_CS_PIN   4
-#define SRAM_CS_PIN      9
-
-#include <digitalWriteFast.h>
 #include <sp3000.h>
 #include <SPI.h>
 #include <Wire.h>
 #include <string.h>
 #include <avr/pgmspace.h>
+#include <WildFire.h>
+WildFire wf;
+
+#define CC3000_MODE      0
+#define lSer             Serial
+
 
 #define STOP    lSer.println (F("I'm stopping !")); \
                 while (1)
 
-#define LED_PIN          13
 /*****************************************************************************
  *
  * {PatchProgrammer.c}
@@ -1586,16 +1574,8 @@ unsigned char fancyBuffer[MAC_ADDR_LEN];
 
 void setup()
 {
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, HIGH);
+  wf.begin();
   
-  /* Make sure SD card CS is disabled */
-  digitalWrite(SD_CARD_CS_PIN, HIGH);
-  pinMode(SD_CARD_CS_PIN, OUTPUT);
-  /* Make sure SRAM CS is disabled */
-  digitalWrite(SRAM_CS_PIN, HIGH);
-  pinMode(SRAM_CS_PIN, OUTPUT);
-
   lSer.begin (115200);
   
   lSer.println (F("On Indicator !"));
@@ -1604,11 +1584,11 @@ void setup()
   SPI.setDataMode(SPI_MODE1);
   SPI.setBitOrder(MSBFIRST);
   SPI.setClockDivider(SPI_CLOCK_DIV2);
-  pinMode(53, OUTPUT);
+  pinMode(SS, OUTPUT);
   
   lSer.println (F("\n*************** CC3000 Patch programmer V1.0 ****************"));
   lSer.println(F("\nInitialising the CC3000 ..."));
-  CC3000_Init (CC3000_MODE, CC3000_CS_PIN, CC3000_EN_PIN, CC3000_IRQ_PIN, CC3000_IRQ_LEVEL);
+  sp_wifi_init(CC3000_MODE);
 
   lSer.println (F("System information."));
   lSer.print(F("RX Buffer : "));

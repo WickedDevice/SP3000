@@ -31,8 +31,7 @@
 #include "wlan.hpp"
 #include "hci.hpp"
 #include "spi.hpp"
-#include "pca9536.hpp"
-#include "leds.hpp"
+#include "wildfire_cc3000_pins.h"
 
 volatile unsigned long ulSmartConfigFinished,
 	ulCC3000Connected,
@@ -49,14 +48,6 @@ volatile unsigned char ucStopSmartConfig;
 byte asyncNotificationWaiting=false;
 long lastAsyncEvent;
 byte dhcpIPAddress[4];
-
-uint8_t WLAN_CS;          // Arduino pin connected to CC3000 WLAN_SPI_CS
-uint8_t WLAN_EN;          // Arduino pin connected to CC3000 VBAT_SW_EN
-uint8_t WLAN_IRQ;         // Arduino pin connected to CC3000 WLAN_SPI_IRQ
-uint8_t WLAN_IRQ_INTNUM;  // The attachInterrupt() number that corresponds
-                          // to WLAN_IRQ
-uint8_t SD_CARD_CS;       // Pin connected to the CS signal of the SD Card
-uint8_t SRAM_CS;          // Pin connected to the CS signal of the SRAM
 
 void (*cb_ptr)(uint32_t EventType,
                char *data,
@@ -206,10 +197,10 @@ inline void WriteWlanEnablePin(unsigned char val)
 
 //  digitalWriteFast (WLAN_EN, (val) ? HIGH : LOW);
 	if (val) {
-		digitalWriteFast (WLAN_EN, HIGH);
+		WLAN_EN_PORT |= _BV(WLAN_EN_PIN); //digitalWriteFast (WLAN_EN, HIGH);
 	}
 	else {
-		digitalWriteFast (WLAN_EN, LOW);
+		WLAN_EN_PORT &= ~_BV(WLAN_EN_PIN); //digitalWriteFast (WLAN_EN, LOW);
 	}
 }
 
@@ -239,27 +230,15 @@ void WlanInterruptDisable(void)
     to indicate we're not sending any patches.
     
  --------------------------------------------------------------------*/
-void sp_wifi_init (byte startReqest,
-                 uint8_t cs_pin,
-                 uint8_t en_pin,
-                 uint8_t irq_pin,
-                 uint8_t irq_num)
+void sp_wifi_init (byte startReqest)
 {
   /*
    * Initialize pins used
    */
-  WLAN_CS = cs_pin;
-  WLAN_EN = en_pin;
-  WLAN_IRQ = irq_pin;
-  WLAN_IRQ_INTNUM = irq_num;
+
 
   // Initialize the SPI library
   SpiInit();
-
-  /*
-  * Initialize the PCA9536
-  */
-	initled();
 
 	/* 
 	 * Set the initial state of the output pins before
@@ -271,13 +250,13 @@ void sp_wifi_init (byte startReqest,
 	negate_cs();	// turn off CS until we're ready
 
 	/* Set the modes for the control pins */
-	pinMode(WLAN_IRQ, INPUT);
-	pinMode(WLAN_EN, OUTPUT);
-	pinMode(WLAN_CS, OUTPUT);
+	WLAN_IRQ_DDR &= ~_BV(WLAN_IRQ_PIN); // pinMode(WLAN_IRQ, INPUT);
+	WLAN_EN_DDR |= _BV(WLAN_EN_PIN);    // pinMode(WLAN_EN, OUTPUT);
+	WLAN_CS_DDR |= _BV(WLAN_CS_PIN);    // pinMode(WLAN_CS, OUTPUT);
 
-	setled (LED_CON | LED_ACT | LED_ERR | LED_AUX, LED_ON);
-	delay (100);
-	setled (LED_CON | LED_ACT | LED_ERR | LED_AUX, LED_OFF);
+	//setled (LED_CON | LED_ACT | LED_ERR | LED_AUX, LED_ON);
+	//delay (100);
+	//setled (LED_CON | LED_ACT | LED_ERR | LED_AUX, LED_OFF);
 
 	wlan_init( CC3000_AsyncCallback,
 		SendFirmwarePatch,

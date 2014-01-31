@@ -25,9 +25,10 @@
 #include "core.hpp"
 #include "hci.hpp"
 #include "spi.hpp"
+#include "wildfire_cc3000_pins.h"
 
-#define READ                    3
-#define WRITE                   1
+#define SPI_READ                    3
+#define SPI_WRITE                   1
 
 #define HI(value)               (((value) & 0xFF00) >> 8)
 #define LO(value)               ((value) & 0x00FF)
@@ -61,7 +62,7 @@ tSpiInformation sSpiInformation;
 //
 // Static buffer for 5 bytes of SPI HEADER
 //
-unsigned char tSpiReadHeader[] = { READ, 0, 0, 0, 0 };
+unsigned char tSpiReadHeader[] = { SPI_READ, 0, 0, 0, 0 };
 
 // The magic number that resides at the end of the TX/RX buffer (1 byte after
 // the allocated size) for the purpose of detection of the overrun. The location
@@ -377,7 +378,7 @@ long SpiWrite(unsigned char *pUserBuffer, unsigned short usLength)
   if (!(usLength & 0x0001))
     ucPad++;
 
-  pUserBuffer[0] = WRITE;
+  pUserBuffer[0] = SPI_WRITE;
   pUserBuffer[1] = HI(usLength + ucPad);
   pUserBuffer[2] = LO(usLength + ucPad);
   pUserBuffer[3] = 0;
@@ -663,16 +664,16 @@ int SpiInit(void)
 {
 
   // Disable the CC3000 by default */
-  pinMode(WLAN_EN, OUTPUT);
-  digitalWriteFast(WLAN_EN, 0);
+  WLAN_EN_DDR |= _BV(WLAN_EN_PIN);   // pinMode(WLAN_EN, OUTPUT);
+  WLAN_EN_PORT &= ~_BV(WLAN_EN_PIN); // digitalWriteFast(WLAN_EN, 0);
   delay(500);
 
   /* Set CS pin to output */
-  pinMode(WLAN_CS, OUTPUT);
+  WLAN_CS_DDR |= _BV(WLAN_CS_PIN);   // pinMode(WLAN_CS, OUTPUT);
 
   /* Set interrupt pin to input */
-  pinMode(WLAN_IRQ, INPUT);
-  digitalWriteFast(WLAN_IRQ, HIGH); /* Use a weak pullup */
+  WLAN_IRQ_DDR &= ~_BV(WLAN_IRQ_PIN); // pinMode(WLAN_IRQ, INPUT);
+  WLAN_IRQ_PORT |= _BV(WLAN_IRQ_PIN); // digitalWriteFast(WLAN_IRQ, HIGH); /* Use a weak pullup */
 
   /* Initialise SPI */
   SPI.begin();

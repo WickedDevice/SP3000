@@ -8,33 +8,13 @@
 
 // This macro disables a few functions to ensure that the program fits inside
 // a Sweet Pea LeoFi
-#define LEOFI
-
-#ifdef LEOFI
-  #define CC3000_MODE      0
-  #define CC3000_CS_PIN    6
-  #define CC3000_EN_PIN    5
-  #define CC3000_IRQ_PIN   7
-  #define CC3000_IRQ_LEVEL 4
-  // Se
-  #define lSer             Serial
-#else
-  #define CC3000_MODE      0
-  #define CC3000_CS_PIN    10
-  #define CC3000_EN_PIN    7
-  #define CC3000_IRQ_PIN   3
-  #define CC3000_IRQ_LEVEL 1
-  // I normally use a USB to serial cable connected to Serial1 on a Sweet Pea Mega
-  // board. You can change it to anything you want.
-  #define lSer             Serial1
-  #define SD_CARD_CS_PIN   4
-  #define SRAM_CS_PIN      9
-  #define UDP_TEST
-#endif
-
+#define CC3000_MODE      0
+#define lSer             Serial
+#define UDP_TEST
 #include <sp3000.h>
 #include <SPI.h>
-#include <Wire.h>
+#include <WildFire.h>
+WildFire wf;
 
 // Global variable that holds the initialized status of the 
 // CC3000 module.
@@ -42,28 +22,16 @@ byte isInitialized = false;
 
 void setup(void)
 {
+  wf.begin();
+  
   lSer.begin(115200);
   lSer.println (F("ON"));
   
-#ifndef LEOFI
-  digitalWrite(SD_CARD_CS_PIN, HIGH);
-  digitalWrite(SRAM_CS_PIN, HIGH);
-  pinMode(SD_CARD_CS_PIN, OUTPUT);
-  pinMode(SRAM_CS_PIN, OUTPUT);
-#endif
-
   SPI.begin();
   SPI.setDataMode(SPI_MODE1);
   SPI.setBitOrder(MSBFIRST);
-  SPI.setClockDivider(SPI_CLOCK_DIV2);
-  
-  pinMode(53, OUTPUT);
-  
-#ifdef LEOFI
-  // Leonardo needs to wait for a serial connection.
-  while (!lSer);
-  lSer.println (F("Connected to LeoFfi !"));
-#endif
+  SPI.setClockDivider(SPI_CLOCK_DIV2);  
+  pinMode(SS, OUTPUT); 
 }
 
 void AsyncEventPrint(void)
@@ -75,17 +43,17 @@ void AsyncEventPrint(void)
       break;
 
     case HCI_EVNT_WLAN_UNSOL_CONNECT:
-      setled (LED_CON, LED_ON);
+      //setled (LED_CON, LED_ON);
       lSer.println(F("\nCC3000 Async event: Unsolicited connect"));
       break;
 
     case HCI_EVNT_WLAN_UNSOL_DISCONNECT:
-      setled (LED_CON, LED_OFF);
+      //setled (LED_CON, LED_OFF);
       lSer.println(F("\nCC3000 Async event: Unsolicted disconnect"));
       break;
 
     case HCI_EVNT_WLAN_UNSOL_DHCP:
-      setled (LED_ACT, LED_ON);
+      //setled (LED_ACT, LED_ON);
       lSer.print(F("\nCC3000 Async event: Got IP address via DHCP: "));
       lSer.print(dhcpIPAddress[0]);
       lSer.print(F("."));
@@ -94,7 +62,7 @@ void AsyncEventPrint(void)
       lSer.print(dhcpIPAddress[2]);
       lSer.print(F("."));
       lSer.println(dhcpIPAddress[3]);
-      setled (LED_ACT, LED_OFF);
+      //setled (LED_ACT, LED_OFF);
       break;
 
     case HCI_EVENT_CC3000_CAN_SHUT_DOWN:
@@ -415,7 +383,7 @@ void Initialize(void)
 
   step = printStep(step);
   lSer.println(F("Initializing CC3000..."));
-  CC3000_Init (CC3000_MODE, CC3000_CS_PIN, CC3000_EN_PIN, CC3000_IRQ_PIN, CC3000_IRQ_LEVEL);
+  CC3000_Init (CC3000_MODE);
   lSer.println(F("            CC3000 init complete."));
 
   step = printStep(step);
